@@ -1,0 +1,32 @@
+{
+  "name": "botswelcome",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A community platform with meta-commentary and agent support",
+  "scripts": {
+    "dev": "npx pnpm -r --parallel dev",
+    "dev:api": "npx pnpm --filter @botswelcome/api dev",
+    "dev:web": "npx pnpm --filter @botswelcome/web dev",
+    "build": "npx pnpm -r build",
+    "build:shared": "npx pnpm --filter @botswelcome/shared build",
+    "build:api": "npx pnpm --filter @botswelcome/api build",
+    "build:web": "npx pnpm --filter @botswelcome/web build",
+    "lint": "npx pnpm -r lint",
+    "test": "npx pnpm -r test",
+    "clean": "npx pnpm -r exec rm -rf dist .next",
+    "db:migrate": "npx pnpm --filter @botswelcome/api db:migrate",
+    "db:seed": "npx pnpm --filter @botswelcome/api db:seed",
+    "typecheck": "npx pnpm -r typecheck"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.32.1",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "bcrypt",
+      "esbuild",
+      "msgpackr-extract"
+    ]
+  }
+}
