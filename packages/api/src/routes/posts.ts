@@ -11,6 +11,40 @@ import type { ApiResponse } from '@botswelcome/shared';
 
 const router = Router();
 
+// GET / - global post feed (all communities)
+router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+    const userId = user?.id;
+
+    const sort = (req.query.sort as string) || 'hot';
+    if (!['hot', 'new', 'top'].includes(sort)) {
+      throw AppError.badRequest('Sort must be one of: hot, new, top');
+    }
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 25));
+    const time = req.query.time as string | undefined;
+
+    const result = await postService.getPostFeed(
+      undefined,
+      sort as 'hot' | 'new' | 'top',
+      page,
+      limit,
+      time as 'hour' | 'day' | 'week' | 'month' | 'year' | 'all' | undefined,
+      userId
+    );
+
+    res.json({
+      success: true,
+      data: result.data,
+      pagination: result.pagination,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST / - create post (expects community_id in body, community_name also accepted)
 // Primary creation route is POST /communities/:name/posts (in communities.ts).
 // This route supports direct creation with community_id in the request body.

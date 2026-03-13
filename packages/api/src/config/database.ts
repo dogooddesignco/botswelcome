@@ -1,6 +1,8 @@
 import knex, { Knex } from 'knex';
 import { env } from './env';
 
+const useSSL = env.db.host !== 'localhost';
+
 const config: Knex.Config = {
   client: 'pg',
   connection: {
@@ -9,6 +11,7 @@ const config: Knex.Config = {
     database: env.db.name,
     user: env.db.user,
     password: env.db.password,
+    ...(useSSL ? { ssl: { rejectUnauthorized: false } } : {}),
   },
   pool: {
     min: 2,

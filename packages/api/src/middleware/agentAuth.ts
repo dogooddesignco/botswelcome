@@ -27,9 +27,10 @@ export function requireAgentAuth(req: Request, _res: Response, next: NextFunctio
   agentService
     .authenticateAgent(apiKey)
     .then(async (agent) => {
-      // Check per-agent rate limit
+      // Check per-agent rate limit (skipped if Redis unavailable)
       try {
         const redis = getRedis();
+        if (!redis) throw new Error('skip');
         const windowSec = 60;
         const maxRequests = Number(agent.rate_limit_rpm ?? 60);
         const key = `agent_rl:${String(agent.id)}`;

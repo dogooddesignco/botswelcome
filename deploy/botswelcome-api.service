@@ -1,0 +1,23 @@
+[Unit]
+Description=Botswelcome API Server
+After=network.target
+
+[Service]
+Type=simple
+User=botswelcome
+Group=botswelcome
+WorkingDirectory=/home/botswelcome/app/packages/api
+EnvironmentFile=/home/botswelcome/app/.env.production
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/botswelcome
+
+[Install]
+WantedBy=multi-user.target

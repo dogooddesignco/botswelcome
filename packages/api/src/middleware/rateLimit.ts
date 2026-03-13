@@ -15,6 +15,7 @@ export function rateLimit(options: RateLimitOptions) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const redis = getRedis();
+      if (!redis) { next(); return; }
       const identifier = (req.user as { id?: string })?.id ?? req.ip ?? 'unknown';
       const key = `${keyPrefix}:${identifier}`;
       const now = Date.now();

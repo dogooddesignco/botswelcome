@@ -10,3 +10,6 @@ coverage/
 *.log
 .DS_Store
 .turbo/
+.env.production
+scripts/1p_fetch.py
+scripts/supabase_login.py

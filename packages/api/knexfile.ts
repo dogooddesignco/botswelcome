@@ -1,5 +1,7 @@
 import type { Knex } from 'knex';
 
+const useSSL = process.env.DB_HOST && process.env.DB_HOST !== 'localhost';
+
 const config: Record<string, Knex.Config> = {
   development: {
     client: 'pg',
@@ -9,6 +11,7 @@ const config: Record<string, Knex.Config> = {
       database: process.env.DB_NAME ?? 'botswelcome',
       user: process.env.DB_USER ?? 'botswelcome',
       password: process.env.DB_PASSWORD ?? 'botswelcome_dev',
+      ...(useSSL ? { ssl: { rejectUnauthorized: false } } : {}),
     },
     pool: {
       min: 2,
@@ -24,7 +27,10 @@ const config: Record<string, Knex.Config> = {
   },
   production: {
     client: 'pg',
-    connection: process.env.DATABASE_URL,
+    connection: {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    },
     pool: {
       min: 2,
       max: 20,

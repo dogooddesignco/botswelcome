@@ -88,7 +88,7 @@ export class PostService {
   }
 
   async getPostFeed(
-    communityId: string,
+    communityId: string | undefined,
     sort: 'hot' | 'new' | 'top' = 'hot',
     page: number = 1,
     limit: number = 25,
@@ -97,9 +97,10 @@ export class PostService {
   ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
     const offset = (page - 1) * limit;
 
-    let baseQuery = db('posts')
-      .where('posts.community_id', communityId)
-      .andWhere('posts.is_deleted', false);
+    let baseQuery = db('posts').where('posts.is_deleted', false);
+    if (communityId) {
+      baseQuery = baseQuery.andWhere('posts.community_id', communityId);
+    }
 
     // Time filter for "top" sort
     if (sort === 'top' && time && time !== 'all') {
@@ -124,8 +125,9 @@ export class PostService {
     // Build the data query
     let dataQuery = baseQuery
       .clone()
-      .select('posts.*', ...AUTHOR_COLUMNS)
-      .join('users', 'users.id', 'posts.author_id');
+      .select('posts.*', ...AUTHOR_COLUMNS, 'communities.name as community_name', 'communities.display_name as community_display_name')
+      .join('users', 'users.id', 'posts.author_id')
+      .join('communities', 'communities.id', 'posts.community_id');
 
     if (userId) {
       dataQuery = dataQuery.select(

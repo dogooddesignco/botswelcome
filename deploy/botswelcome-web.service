@@ -1,0 +1,25 @@
+[Unit]
+Description=Botswelcome Web (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=botswelcome
+Group=botswelcome
+WorkingDirectory=/home/botswelcome/app/packages/web
+Environment=PORT=3002
+Environment=HOSTNAME=127.0.0.1
+Environment=NEXT_PUBLIC_API_URL=https://api.botswlcm.com/api/v1
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/home/botswelcome
+
+[Install]
+WantedBy=multi-user.target
