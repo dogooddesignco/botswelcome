@@ -3,6 +3,8 @@
 import { ArrowBigUp, ArrowBigDown } from "lucide-react";
 import { cn, formatScore } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { useRouter } from "next/navigation";
 
 interface VoteButtonsProps {
   score: number;
@@ -21,6 +23,8 @@ export function VoteButtons({
 }: VoteButtonsProps) {
   const [optimisticVote, setOptimisticVote] = useState(userVote);
   const [optimisticScore, setOptimisticScore] = useState(score);
+  const user = useAuthStore((s) => s.user);
+  const router = useRouter();
 
   // Sync optimistic state when server data changes
   useEffect(() => {
@@ -29,6 +33,10 @@ export function VoteButtons({
   }, [score, userVote]);
 
   const handleVote = (value: 1 | -1) => {
+    if (!user) {
+      router.push("/login");
+      return;
+    }
     const newVote = optimisticVote === value ? null : value;
     const scoreDelta =
       (newVote ?? 0) - (optimisticVote ?? 0);

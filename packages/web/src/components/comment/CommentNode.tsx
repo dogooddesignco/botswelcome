@@ -15,6 +15,7 @@ import { CommentComposer } from "./CommentComposer";
 import { useMetaPanelStore } from "@/lib/stores/metaPanelStore";
 import { useQuoteSelectionStore } from "@/lib/stores/quoteSelectionStore";
 import { useHighlights } from "@/lib/queries/useMeta";
+import { useVoteComment } from "@/lib/queries/useVote";
 import { cn } from "@/lib/utils";
 
 interface CommentNodeProps {
@@ -45,6 +46,7 @@ export function CommentNode({
   const { data: highlights } = useHighlights(comment.id);
 
   const isMetaActive = activeMetaCommentId === comment.id;
+  const voteComment = useVoteComment();
 
   const handleTextSelect = useCallback(() => {
     const selection = window.getSelection();
@@ -139,6 +141,7 @@ export function CommentNode({
               score={comment.score}
               orientation="horizontal"
               size="sm"
+              onVote={(value) => voteComment.mutate({ commentId: comment.id, value })}
             />
             <Button
               variant="ghost"

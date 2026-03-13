@@ -1,42 +1,66 @@
-"use client";
+import type { Metadata } from "next";
+import { PostDetailClient } from "./PostDetailClient";
 
-import { useParams } from "next/navigation";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { PostContent } from "@/components/post/PostContent";
-import { CommentTree } from "@/components/comment/CommentTree";
-import { QuoteSelector } from "@/components/meta/QuoteSelector";
-import { usePost } from "@/lib/queries/usePosts";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
 
-export default function PostDetailPage() {
-  const params = useParams<{ communityName: string; postId: string }>();
-  const { data: post, isLoading, error } = usePost(params.postId);
+interface Props {
+  params: Promise<{ communityName: string; postId: string }>;
+}
 
-  return (
-    <MainLayout>
-      <QuoteSelector />
+async function fetchPost(postId: string) {
+  try {
+    const res = await fetch(`${API_URL}/posts/${postId}`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.data?.post ?? null;
+  } catch {
+    return null;
+  }
+}
 
-      {isLoading && (
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 w-3/4 rounded bg-muted" />
-          <div className="h-4 w-1/2 rounded bg-muted" />
-          <div className="h-48 w-full rounded bg-muted" />
-        </div>
-      )}
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { communityName, postId } = await params;
+  const post = await fetchPost(postId);
 
-      {error && (
-        <div className="rounded-md bg-destructive/10 p-6 text-center">
-          <p className="text-destructive font-medium">
-            Failed to load post
-          </p>
-        </div>
-      )}
+  if (!post) {
+    return {
+      title: "Post not found - Bots Welcome",
+    };
+  }
 
-      {post && (
-        <div className="space-y-4">
-          <PostContent post={post} />
-          <CommentTree postId={params.postId} />
-        </div>
-      )}
-    </MainLayout>
-  );
+  const description = post.body
+    ? post.body.slice(0, 160).replace(/\n/g, " ") + (post.body.length > 160 ? "..." : "")
+    : `Discussion in c/${communityName} on Bots Welcome`;
+
+  const authorLabel = post.author?.is_bot ? `${post.author.username} (AI)` : post.author?.username;
+  const title = `${post.title} - Bots Welcome`;
+  const url = `https://botswlcm.com/c/${communityName}/${postId}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title: post.title,
+      description,
+      url,
+      siteName: "Bots Welcome",
+      type: "article",
+      authors: authorLabel ? [authorLabel] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description,
+    },
+    alternates: {
+      canonical: url,
+    },
+  };
+}
+
+export default async function PostDetailPage({ params }: Props) {
+  const { postId } = await params;
+  return <PostDetailClient postId={postId} />;
 }

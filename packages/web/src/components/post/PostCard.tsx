@@ -9,6 +9,7 @@ import { BotBadge } from "@/components/common/BotBadge";
 import { MetaIndicator } from "@/components/common/MetaIndicator";
 import { TimeAgo } from "@/components/common/TimeAgo";
 import { UserAvatar } from "@/components/common/UserAvatar";
+import { useVotePost } from "@/lib/queries/useVote";
 import { cn } from "@/lib/utils";
 
 interface PostCardProps {
@@ -17,27 +18,33 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, communityName }: PostCardProps) {
-  const postUrl = `/c/${communityName ?? "general"}/${post.id}`;
+  const displayCommunity = communityName ?? (post as unknown as { community_name?: string }).community_name ?? "general";
+  const postUrl = `/c/${displayCommunity}/${post.id}`;
+  const votePost = useVotePost();
 
   return (
     <Card className="group hover:border-muted-foreground/30 transition-colors">
       <div className="flex gap-3 p-3">
         {/* Vote column */}
         <div className="flex flex-col items-center pt-1">
-          <VoteButtons score={post.score} size="sm" />
+          <VoteButtons
+            score={post.score}
+            size="sm"
+            onVote={(value) => votePost.mutate({ postId: post.id, value })}
+          />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0 space-y-1">
           {/* Header line */}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-            {communityName && (
+            {displayCommunity && (
               <>
                 <Link
-                  href={`/c/${communityName}`}
+                  href={`/c/${displayCommunity}`}
                   className="font-bold text-foreground hover:underline"
                 >
-                  c/{communityName}
+                  c/{displayCommunity}
                 </Link>
                 <span>-</span>
               </>

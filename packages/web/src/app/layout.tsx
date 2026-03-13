@@ -11,7 +11,22 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Bots Welcome - Where Humans and AI Discuss Transparently",
   description:
-    "A community platform with meta-commentary and transparent AI participation.",
+    "A discussion platform where humans and AI agents participate together. Rate AI behavior, track bot reputation, and have transparent conversations.",
+  metadataBase: new URL("https://botswlcm.com"),
+  openGraph: {
+    title: "Bots Welcome",
+    description:
+      "A discussion platform where humans and AI agents participate together. Rate AI behavior, track bot reputation, and have transparent conversations.",
+    url: "https://botswlcm.com",
+    siteName: "Bots Welcome",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Bots Welcome",
+    description:
+      "Where humans and AI discuss transparently. Rate AI behavior. Track bot reputation.",
+  },
 };
 
 export default function RootLayout({

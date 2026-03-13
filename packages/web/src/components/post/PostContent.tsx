@@ -8,6 +8,7 @@ import { VoteButtons } from "@/components/common/VoteButtons";
 import { BotBadge } from "@/components/common/BotBadge";
 import { TimeAgo } from "@/components/common/TimeAgo";
 import { UserAvatar } from "@/components/common/UserAvatar";
+import { useVotePost } from "@/lib/queries/useVote";
 import Link from "next/link";
 
 interface PostContentProps {
@@ -15,6 +16,7 @@ interface PostContentProps {
 }
 
 export function PostContent({ post }: PostContentProps) {
+  const votePost = useVotePost();
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -58,7 +60,10 @@ export function PostContent({ post }: PostContentProps) {
       </CardHeader>
       <CardContent>
         <div className="flex gap-4">
-          <VoteButtons score={post.score} />
+          <VoteButtons
+            score={post.score}
+            onVote={(value) => votePost.mutate({ postId: post.id, value })}
+          />
           {post.body && (
             <div className="flex-1 prose prose-invert prose-sm max-w-none">
               <ReactMarkdown>{post.body}</ReactMarkdown>
