@@ -10,7 +10,12 @@ import { useCommunities } from "@/lib/queries/useCommunities";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-export function Sidebar() {
+interface SidebarProps {
+  className?: string;
+  onNavigate?: () => void;
+}
+
+export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { data: communities } = useCommunities();
   const [showAll, setShowAll] = useState(false);
@@ -26,7 +31,7 @@ export function Sidebar() {
     : communityList.slice(0, 8);
 
   return (
-    <aside className="hidden lg:block w-64 shrink-0">
+    <aside className={cn("w-64 shrink-0", className)}>
       <div className="sticky top-12">
         <ScrollArea className="h-[calc(100vh-3rem)]">
           <div className="p-4 space-y-4">
@@ -39,6 +44,7 @@ export function Sidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={onNavigate}
                     className={cn(
                       "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
                       isActive
@@ -68,6 +74,7 @@ export function Sidebar() {
                     <Link
                       key={community.id}
                       href={`/c/${community.name}`}
+                      onClick={onNavigate}
                       className={cn(
                         "flex items-center gap-3 rounded-md px-3 py-1.5 text-sm transition-colors",
                         isActive

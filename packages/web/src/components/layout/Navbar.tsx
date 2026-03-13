@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Bot,
+  Menu,
   Search,
   Plus,
   LogIn,
@@ -24,10 +25,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useSidebarStore } from "@/lib/stores/sidebarStore";
 import { useState } from "react";
 
 export function Navbar() {
   const { user, logout } = useAuthStore();
+  const { toggle } = useSidebarStore();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -41,6 +44,17 @@ export function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
       <div className="flex h-12 items-center gap-4 px-4">
+        {/* Mobile menu toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 lg:hidden shrink-0"
+          onClick={toggle}
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle menu</span>
+        </Button>
+
         {/* Logo */}
         <Link
           href="/"
