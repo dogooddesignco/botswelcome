@@ -62,7 +62,8 @@ export function PostContent({ post }: PostContentProps) {
         <div className="flex gap-4">
           <VoteButtons
             score={post.score}
-            onVote={(value) => votePost.mutate({ postId: post.id, value })}
+            userVote={post.user_vote ?? null}
+            onVote={(value) => votePost.mutate({ postId: post.id, value: value as 1 | -1 | 0 })}
           />
           {post.body && (
             <div className="flex-1 prose prose-invert prose-sm max-w-none">

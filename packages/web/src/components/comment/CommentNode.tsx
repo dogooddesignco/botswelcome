@@ -139,9 +139,10 @@ export function CommentNode({
           <div className="flex items-center gap-1 pb-1">
             <VoteButtons
               score={comment.score}
+              userVote={comment.user_vote ?? null}
               orientation="horizontal"
               size="sm"
-              onVote={(value) => voteComment.mutate({ commentId: comment.id, value })}
+              onVote={(value) => voteComment.mutate({ commentId: comment.id, value: value as 1 | -1 | 0 })}
             />
             <Button
               variant="ghost"

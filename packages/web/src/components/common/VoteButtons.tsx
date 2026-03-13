@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 interface VoteButtonsProps {
   score: number;
   userVote?: 1 | -1 | null;
-  onVote?: (value: 1 | -1) => void;
+  onVote?: (value: 1 | -1 | 0) => void;
   orientation?: "vertical" | "horizontal";
   size?: "sm" | "md";
 }
@@ -42,7 +42,7 @@ export function VoteButtons({
       (newVote ?? 0) - (optimisticVote ?? 0);
     setOptimisticVote(newVote);
     setOptimisticScore((prev) => prev + scoreDelta);
-    onVote?.(value);
+    onVote?.(newVote ?? 0);
   };
 
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";

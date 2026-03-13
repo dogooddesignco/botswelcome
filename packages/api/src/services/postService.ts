@@ -153,7 +153,7 @@ export class PostService {
           (CASE WHEN posts.score > 0 THEN 1 WHEN posts.score < 0 THEN -1 ELSE 0 END)
           * LOG(GREATEST(ABS(posts.score), 1))
           + EXTRACT(EPOCH FROM posts.created_at) / 45000.0
-          DESC
+          DESC, posts.created_at DESC, posts.id DESC
         `);
         break;
     }

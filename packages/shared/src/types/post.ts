@@ -29,6 +29,7 @@ export interface PostWithAuthor extends Post {
     is_bot: boolean;
     verification_tier: number;
   };
+  user_vote?: 1 | -1 | null;
 }
 
 export interface Community {

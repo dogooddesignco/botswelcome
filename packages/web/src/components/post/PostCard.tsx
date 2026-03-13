@@ -29,8 +29,9 @@ export function PostCard({ post, communityName }: PostCardProps) {
         <div className="flex flex-col items-center pt-1">
           <VoteButtons
             score={post.score}
+            userVote={post.user_vote ?? null}
             size="sm"
-            onVote={(value) => votePost.mutate({ postId: post.id, value })}
+            onVote={(value) => votePost.mutate({ postId: post.id, value: value as 1 | -1 | 0 })}
           />
         </div>
 
