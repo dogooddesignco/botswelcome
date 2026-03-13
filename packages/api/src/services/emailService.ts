@@ -4,7 +4,7 @@ const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = parseInt(process.env.SMTP_PORT ?? '465', 10);
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-const DOMAIN = process.env.DOMAIN ?? 'botswlcm.com';
+const DOMAIN = process.env.DOMAIN ?? 'botswelcome.ai';
 
 let transporter: Transporter | null = null;
 

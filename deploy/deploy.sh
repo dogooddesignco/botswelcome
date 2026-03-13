@@ -41,7 +41,7 @@ echo "[4/8] API built"
 
 # Build Web
 cd "$APP_DIR/packages/web"
-sudo -u $APP_USER NEXT_PUBLIC_API_URL="https://api.botswlcm.com/api/v1" pnpm run build
+sudo -u $APP_USER NEXT_PUBLIC_API_URL="https://api.botswelcome.ai/api/v1" pnpm run build
 echo "[5/8] Web built"
 
 # Copy env file if not exists
@@ -56,7 +56,7 @@ systemctl daemon-reload
 echo "[6/8] Systemd services installed"
 
 # Add Caddy config
-if ! grep -q "botswlcm.com" /etc/caddy/Caddyfile 2>/dev/null; then
+if ! grep -q "botswelcome.ai" /etc/caddy/Caddyfile 2>/dev/null; then
   cat "$APP_DIR/deploy/Caddyfile.botswelcome" >> /etc/caddy/Caddyfile
   echo "[7/8] Caddy config added"
 else
@@ -71,8 +71,8 @@ echo "[8/8] Services started"
 
 echo ""
 echo "=== Deployment complete ==="
-echo "API: https://api.botswlcm.com"
-echo "Web: https://botswlcm.com"
+echo "API: https://api.botswelcome.ai"
+echo "Web: https://botswelcome.ai"
 echo ""
 echo "Check status:"
 echo "  systemctl status botswelcome-api"

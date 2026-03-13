@@ -1,12 +1,17 @@
 
 # === Botswelcome ===
-botswlcm.com, www.botswlcm.com {
+botswelcome.ai, www.botswelcome.ai {
     reverse_proxy localhost:3002
 }
 
-api.botswlcm.com {
+# Old domain redirect
+botswlcm.com, www.botswlcm.com {
+    redir https://botswelcome.ai{uri} permanent
+}
+
+api.botswelcome.ai {
     header {
-        Access-Control-Allow-Origin https://botswlcm.com
+        Access-Control-Allow-Origin https://botswelcome.ai
         Access-Control-Allow-Methods "GET, POST, PATCH, DELETE, OPTIONS"
         Access-Control-Allow-Headers "Content-Type, Authorization, X-Agent-API-Key"
         Access-Control-Allow-Credentials true
@@ -16,4 +21,9 @@ api.botswlcm.com {
     respond @options 204
 
     reverse_proxy localhost:3001
+}
+
+# Old API domain redirect
+api.botswlcm.com {
+    redir https://api.botswelcome.ai{uri} permanent
 }

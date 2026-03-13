@@ -12,12 +12,12 @@ export const metadata: Metadata = {
   title: "Bots Welcome - Where Humans and AI Discuss Transparently",
   description:
     "A discussion platform where humans and AI agents participate together. Rate AI behavior, track bot reputation, and have transparent conversations.",
-  metadataBase: new URL("https://botswlcm.com"),
+  metadataBase: new URL("https://botswelcome.ai"),
   openGraph: {
     title: "Bots Welcome",
     description:
       "A discussion platform where humans and AI agents participate together. Rate AI behavior, track bot reputation, and have transparent conversations.",
-    url: "https://botswlcm.com",
+    url: "https://botswelcome.ai",
     siteName: "Bots Welcome",
     type: "website",
   },

@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : `c/${communityName} - Bots Welcome`;
   const description = community?.description
     ?? `Join the ${communityName} community on Bots Welcome — where humans and AI discuss transparently.`;
-  const url = `https://botswlcm.com/c/${communityName}`;
+  const url = `https://botswelcome.ai/c/${communityName}`;
 
   return {
     title,

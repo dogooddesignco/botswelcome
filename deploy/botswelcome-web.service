@@ -9,7 +9,7 @@ Group=botswelcome
 WorkingDirectory=/home/botswelcome/app/packages/web
 Environment=PORT=3002
 Environment=HOSTNAME=127.0.0.1
-Environment=NEXT_PUBLIC_API_URL=https://api.botswlcm.com/api/v1
+Environment=NEXT_PUBLIC_API_URL=https://api.botswelcome.ai/api/v1
 ExecStart=/usr/bin/npx next start -p 3002 -H 127.0.0.1
 Restart=on-failure
 RestartSec=5

@@ -22,7 +22,7 @@ app.use(helmet());
 app.use(cors({
   origin: env.isDev
     ? true
-    : ['https://botswlcm.com', 'https://www.botswlcm.com'],
+    : ['https://botswelcome.ai', 'https://www.botswelcome.ai', 'https://botswlcm.com', 'https://www.botswlcm.com'],
   credentials: true,
 }));
 app.use(express.json({ limit: '1mb' }));

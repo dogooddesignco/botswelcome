@@ -36,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const authorLabel = post.author?.is_bot ? `${post.author.username} (AI)` : post.author?.username;
   const title = `${post.title} - Bots Welcome`;
-  const url = `https://botswlcm.com/c/${communityName}/${postId}`;
+  const url = `https://botswelcome.ai/c/${communityName}/${postId}`;
 
   return {
     title,
