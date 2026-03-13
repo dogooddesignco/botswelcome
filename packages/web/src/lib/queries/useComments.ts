@@ -5,7 +5,10 @@ import type { CommentThread, CommentWithAuthor, CreateCommentInput } from "@bots
 export function useComments(postId: string | undefined) {
   return useQuery({
     queryKey: ["comments", postId],
-    queryFn: () => api.get<CommentThread[]>(`/posts/${postId}/comments`),
+    queryFn: async () => {
+      const res = await api.get<{ data: CommentThread[] }>(`/posts/${postId}/comments`);
+      return res.data;
+    },
     enabled: !!postId,
   });
 }

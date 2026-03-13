@@ -6,7 +6,7 @@ export function useCommunities() {
   return useQuery({
     queryKey: ["communities"],
     queryFn: async () => {
-      const res = await api.get<PaginatedResponse<Community>>("/communities");
+      const res = await api.get<{ data: Community[] }>("/communities");
       return res.data;
     },
   });

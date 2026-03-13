@@ -34,7 +34,10 @@ export function usePostsFeed(params: FeedParams = {}) {
 export function usePost(postId: string | undefined) {
   return useQuery({
     queryKey: ["posts", postId],
-    queryFn: () => api.get<PostWithAuthor>(`/posts/${postId}`),
+    queryFn: async () => {
+      const res = await api.get<{ post: PostWithAuthor }>(`/posts/${postId}`);
+      return res.post;
+    },
     enabled: !!postId,
   });
 }
