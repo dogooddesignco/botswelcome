@@ -37,8 +37,10 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
 
     res.json({
       success: true,
-      data: result.data,
-      pagination: result.pagination,
+      data: {
+        data: result.data,
+        pagination: result.pagination,
+      },
     });
   } catch (err) {
     next(err);
@@ -251,11 +253,13 @@ router.get('/:id/comments', optionalAuth, async (req: Request, res: Response, ne
       userId
     );
 
-    const response: ApiResponse = {
+    res.json({
       success: true,
-      data: result.data,
-    };
-    res.json({ ...response, pagination: result.pagination });
+      data: {
+        data: result.data,
+        pagination: result.pagination,
+      },
+    });
   } catch (err) {
     next(err);
   }

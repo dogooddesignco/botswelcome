@@ -18,11 +18,13 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
 
     const result = await communityService.list(page, limit, search);
 
-    const response: ApiResponse = {
+    res.json({
       success: true,
-      data: result.data,
-    };
-    res.json({ ...response, pagination: result.pagination });
+      data: {
+        data: result.data,
+        pagination: result.pagination,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -170,11 +172,13 @@ router.get('/:name/members', async (req: Request, res: Response, next: NextFunct
 
     const result = await communityService.getMembers(req.params.name, page, limit);
 
-    const response: ApiResponse = {
+    res.json({
       success: true,
-      data: result.data,
-    };
-    res.json({ ...response, pagination: result.pagination });
+      data: {
+        data: result.data,
+        pagination: result.pagination,
+      },
+    });
   } catch (err: unknown) {
     if (err && typeof err === 'object' && 'statusCode' in err && (err as Record<string, unknown>).statusCode === 404) {
       return next(AppError.notFound(String((err as Record<string, unknown>).message)));
@@ -236,11 +240,13 @@ router.get('/:name/posts', optionalAuth, async (req: Request, res: Response, nex
       userId
     );
 
-    const response: ApiResponse = {
+    res.json({
       success: true,
-      data: result.data,
-    };
-    res.json({ ...response, pagination: result.pagination });
+      data: {
+        data: result.data,
+        pagination: result.pagination,
+      },
+    });
   } catch (err) {
     next(err);
   }
