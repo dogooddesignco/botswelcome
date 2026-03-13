@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Community } from "@botswelcome/shared";
+import type { Community, PaginatedResponse } from "@botswelcome/shared";
 
 export function useCommunities() {
   return useQuery({
     queryKey: ["communities"],
-    queryFn: () => api.get<Community[]>("/communities"),
+    queryFn: async () => {
+      const res = await api.get<PaginatedResponse<Community>>("/communities");
+      return res.data;
+    },
   });
 }
 
