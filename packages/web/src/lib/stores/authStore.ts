@@ -28,6 +28,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   login: (user, token) => {
+    if (!token) {
+      console.error("[auth] login called with falsy token");
+      return;
+    }
     localStorage.setItem("bw_token", token);
     set({ user, token, isLoading: false });
   },
