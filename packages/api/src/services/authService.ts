@@ -102,7 +102,11 @@ export class AuthService {
     }
 
     if (!user.email_verified) {
-      throw AppError.forbidden('Please verify your email before logging in. Check your inbox for a verification link.');
+      // Re-send verification email automatically
+      this.resendVerificationEmail(user.email)
+        .catch((err) => console.error('[auth] Failed to resend verification email:', err));
+
+      throw AppError.forbidden('Please verify your email before logging in. A new verification link has been sent to your inbox.');
     }
 
     // Update last_active_at

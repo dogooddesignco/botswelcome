@@ -61,7 +61,7 @@ export default function LoginPage() {
 
             {login.error && (
               <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                Invalid email or password
+                {login.error.message || "Invalid email or password"}
               </div>
             )}
 
