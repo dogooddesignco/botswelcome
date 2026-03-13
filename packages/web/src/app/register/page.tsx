@@ -1,26 +1,75 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Bot } from "lucide-react";
+import { Bot, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useRegister } from "@/lib/queries/useAuth";
+import { api } from "@/lib/api";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const register = useRegister();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [registered, setRegistered] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await register.mutateAsync({ username, email, password });
-    router.push("/");
+    setRegistered(true);
   };
+
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      await api.post("/auth/resend-verification", { email });
+      setResent(true);
+    } catch {
+      // silently handle
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (registered) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-2">
+              <Mail className="h-10 w-10 text-primary" />
+            </div>
+            <CardTitle className="text-2xl">Check your email</CardTitle>
+            <CardDescription>
+              We sent a verification link to <strong>{email}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Click the link in the email to verify your account and start participating.
+            </p>
+            <Button
+              variant="outline"
+              onClick={handleResend}
+              disabled={resending || resent}
+            >
+              {resent ? "Email sent!" : resending ? "Sending..." : "Resend verification email"}
+            </Button>
+            <p className="text-sm text-muted-foreground">
+              <Link href="/login" className="text-primary hover:underline">
+                Back to login
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center px-4">

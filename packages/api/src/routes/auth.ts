@@ -82,6 +82,63 @@ router.post(
   }
 );
 
+// GET /verify-email?token=xxx - verify email
+router.get(
+  '/verify-email',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) {
+        const response: ApiResponse = {
+          success: false,
+          error: { code: 'BAD_REQUEST', message: 'Verification token is required' },
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const result = await authService.verifyEmail(token);
+
+      const response: ApiResponse = {
+        success: true,
+        data: result,
+      };
+      res.status(200).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /resend-verification - resend verification email
+router.post(
+  '/resend-verification',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        const response: ApiResponse = {
+          success: false,
+          error: { code: 'BAD_REQUEST', message: 'Email is required' },
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      await authService.resendVerificationEmail(email);
+
+      // Always respond success to prevent email enumeration
+      const response: ApiResponse = {
+        success: true,
+        data: { message: 'If an unverified account exists with that email, a verification link has been sent.' },
+      };
+      res.status(200).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 router.get(
   '/me',
   requireAuth,

@@ -6,6 +6,7 @@ import { env } from '../config/env';
 import type { JwtPayload } from '../config/auth';
 import type { RegisterInput, LoginInput, User, UserPublic } from '@botswelcome/shared';
 import { AppError } from '../middleware/errorHandler';
+import { emailService } from './emailService';
 
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = '15m';
@@ -43,7 +44,7 @@ export interface AuthResponse {
 }
 
 export class AuthService {
-  async register(input: RegisterInput): Promise<AuthResponse> {
+  async register(input: RegisterInput): Promise<AuthResponse & { email_verification_required: boolean }> {
     // Check for existing user with same email
     const existingEmail = await db('users').where({ email: input.email }).first();
     if (existingEmail) {
@@ -57,6 +58,9 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
+    const verificationToken = crypto.randomBytes(48).toString('hex');
+    const verificationExpires = new Date();
+    verificationExpires.setHours(verificationExpires.getHours() + 24);
 
     const [user] = await db('users')
       .insert({
@@ -66,13 +70,21 @@ export class AuthService {
         verification_tier: 1,
         is_bot: false,
         is_deleted: false,
+        email_verified: false,
+        email_verification_token: verificationToken,
+        email_verification_expires: verificationExpires,
       })
       .returning([...SAFE_USER_COLUMNS]);
+
+    // Send verification email (non-blocking — don't fail registration if email fails)
+    emailService
+      .sendVerificationEmail(input.email, input.username, verificationToken)
+      .catch((err) => console.error('[auth] Verification email failed:', err));
 
     const tokens = await this.generateTokenPair(user.id);
 
     const { is_deleted: _, ...safeUser } = user;
-    return { user: safeUser, tokens };
+    return { user: safeUser, tokens, email_verification_required: true };
   }
 
   async login(input: LoginInput): Promise<AuthResponse> {
@@ -87,6 +99,10 @@ export class AuthService {
     const isValid = await bcrypt.compare(input.password, user.password_hash);
     if (!isValid) {
       throw AppError.unauthorized('Invalid email or password');
+    }
+
+    if (!user.email_verified) {
+      throw AppError.forbidden('Please verify your email before logging in. Check your inbox for a verification link.');
     }
 
     // Update last_active_at
@@ -237,6 +253,58 @@ export class AuthService {
       refresh_token: refreshToken,
       expires_in: 900, // 15 minutes in seconds
     };
+  }
+
+  async verifyEmail(token: string): Promise<{ user: Omit<User, 'is_deleted'>; tokens: AuthTokens }> {
+    const user = await db('users')
+      .where({ email_verification_token: token, is_deleted: false })
+      .first();
+
+    if (!user) {
+      throw AppError.badRequest('Invalid verification link');
+    }
+
+    if (user.email_verified) {
+      throw AppError.badRequest('Email is already verified');
+    }
+
+    if (new Date(user.email_verification_expires) < new Date()) {
+      throw AppError.badRequest('Verification link has expired. Please request a new one.');
+    }
+
+    await db('users').where({ id: user.id }).update({
+      email_verified: true,
+      email_verification_token: null,
+      email_verification_expires: null,
+      updated_at: db.fn.now(),
+    });
+
+    const tokens = await this.generateTokenPair(user.id);
+    const { password_hash: _ph, is_deleted: _d, email_verification_token: _t, email_verification_expires: _e, ...safeUser } = user;
+    safeUser.email_verified = true;
+    return { user: safeUser, tokens };
+  }
+
+  async resendVerificationEmail(email: string): Promise<void> {
+    const user = await db('users')
+      .where({ email, is_deleted: false })
+      .first();
+
+    if (!user || user.email_verified) {
+      // Don't reveal whether email exists
+      return;
+    }
+
+    const newToken = crypto.randomBytes(48).toString('hex');
+    const newExpires = new Date();
+    newExpires.setHours(newExpires.getHours() + 24);
+
+    await db('users').where({ id: user.id }).update({
+      email_verification_token: newToken,
+      email_verification_expires: newExpires,
+    });
+
+    await emailService.sendVerificationEmail(email, user.username, newToken);
   }
 
   async verifyToken(token: string): Promise<JwtPayload | null> {
