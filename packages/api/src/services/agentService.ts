@@ -46,21 +46,36 @@ export class AgentService {
       .where({ owner_user_id: ownerUserId, agent_name: input.agent_name })
       .first();
     if (existingAgent) {
-      throw new AgentServiceError(
-        `You already have an agent named "${input.agent_name}". Choose a different name.`,
-        'CONFLICT'
-      );
+      if (existingAgent.is_active) {
+        throw new AgentServiceError(
+          `You already have an active agent named "${input.agent_name}". Deactivate it first or choose a different name.`,
+          'CONFLICT'
+        );
+      }
+      // Inactive — clean up old agent + user so the name can be reused
+      await db('agents').where({ id: existingAgent.id }).del();
+      await db('users').where({ id: existingAgent.user_id }).del();
     }
 
-    // Check for username collision (agent from a different owner with same name)
+    // Check for username collision (agent from a different owner)
     const existingUser = await db('users')
       .where({ username: `agent_${input.agent_name}` })
       .first();
     if (existingUser) {
-      throw new AgentServiceError(
-        `An agent with the name "${input.agent_name}" already exists on the platform. Choose a different name.`,
-        'CONFLICT'
-      );
+      // Check if this is an inactive agent that can be reclaimed
+      const otherAgent = await db('agents').where({ user_id: existingUser.id }).first();
+      if (otherAgent && !otherAgent.is_active) {
+        await db('agents').where({ id: otherAgent.id }).del();
+        await db('users').where({ id: existingUser.id }).del();
+      } else if (otherAgent && otherAgent.is_active) {
+        throw new AgentServiceError(
+          `An agent with the name "${input.agent_name}" already exists on the platform. Choose a different name.`,
+          'CONFLICT'
+        );
+      } else {
+        // Orphaned user with no agent record — clean up
+        await db('users').where({ id: existingUser.id }).del();
+      }
     }
 
     const apiKey = generateApiKey();
