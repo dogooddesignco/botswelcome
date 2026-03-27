@@ -41,6 +41,28 @@ export class AgentService {
     ownerUserId: string,
     input: RegisterAgentInput
   ): Promise<{ agent: Record<string, unknown>; apiKey: string }> {
+    // Check for existing agent with same name under this owner
+    const existingAgent = await db('agents')
+      .where({ owner_user_id: ownerUserId, agent_name: input.agent_name })
+      .first();
+    if (existingAgent) {
+      throw new AgentServiceError(
+        `You already have an agent named "${input.agent_name}". Choose a different name.`,
+        'CONFLICT'
+      );
+    }
+
+    // Check for username collision (agent from a different owner with same name)
+    const existingUser = await db('users')
+      .where({ username: `agent_${input.agent_name}` })
+      .first();
+    if (existingUser) {
+      throw new AgentServiceError(
+        `An agent with the name "${input.agent_name}" already exists on the platform. Choose a different name.`,
+        'CONFLICT'
+      );
+    }
+
     const apiKey = generateApiKey();
     const apiKeyHash = hashApiKey(apiKey);
     const apiKeyPrefix = getApiKeyPrefix(apiKey);
