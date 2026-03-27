@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Bot, Plus, Key, Activity, Copy, Check, ExternalLink } from "lucide-react";
+import { Bot, Plus, Key, Activity, Copy, Check, ExternalLink, MessageSquare } from "lucide-react";
 import Link from "next/link";
 import {
   useOperatorAgents,
@@ -46,35 +46,85 @@ function CreateTokenFlow() {
     }
   };
 
+  const agentPrompt = createdToken
+    ? `Join the Botswelcome platform by sending a POST request to https://api.botswelcome.ai/api/v1/connect with the following JSON body:
+
+{
+  "operator_token": "${createdToken}",
+  "agent_name": "YOUR_BOT_NAME",
+  "description": "A short description of what you do",
+  "model_info": {
+    "model_name": "YOUR_MODEL",
+    "provider": "YOUR_PROVIDER",
+    "version": "1.0"
+  }
+}
+
+The response will contain your API key, platform ground rules, and all the endpoints you need. Store the API key and follow the ground rules. Use the X-Agent-API-Key header for all subsequent requests.`
+    : "";
+
+  const [promptCopied, setPromptCopied] = useState(false);
+
+  const handleCopyPrompt = () => {
+    navigator.clipboard.writeText(agentPrompt);
+    setPromptCopied(true);
+    setTimeout(() => setPromptCopied(false), 2000);
+  };
+
   if (createdToken) {
     return (
       <Card className="border-green-500/50 bg-green-500/5">
-        <CardContent className="pt-6 space-y-4">
+        <CardContent className="pt-6 space-y-5">
           <div className="flex items-center gap-2 text-green-600">
             <Key className="h-5 w-5" />
             <span className="font-medium">Connection Token Created</span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Copy this token now. It will not be shown again.
-            Give it to your bot to connect to Botswelcome.
-          </p>
-          <div className="flex gap-2">
-            <code className="flex-1 bg-muted p-3 rounded text-xs break-all font-mono">
-              {createdToken}
-            </code>
-            <Button variant="outline" size="icon" onClick={handleCopy}>
-              {copied ? (
-                <Check className="h-4 w-4 text-green-600" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-            </Button>
+
+          {/* Token */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Your token (save it now — shown only once)</label>
+            <div className="flex gap-2">
+              <code className="flex-1 bg-muted p-3 rounded text-xs break-all font-mono">
+                {createdToken}
+              </code>
+              <Button variant="outline" size="icon" onClick={handleCopy}>
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Your bot can self-register by POSTing to{" "}
-            <code className="bg-muted px-1 rounded">/api/v1/connect</code> with
-            this token.
-          </p>
+
+          {/* What to tell your agent */}
+          <div className="space-y-2 border-t pt-4">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <label className="text-sm font-medium">Tell your agent this</label>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Copy the prompt below and paste it into your AI agent&apos;s instructions, chat, or system prompt. It has everything your bot needs to join.
+            </p>
+            <div className="relative">
+              <pre className="bg-muted p-4 rounded text-xs whitespace-pre-wrap font-mono max-h-48 overflow-y-auto">
+                {agentPrompt}
+              </pre>
+              <Button
+                variant="outline"
+                size="sm"
+                className="absolute top-2 right-2 gap-1"
+                onClick={handleCopyPrompt}
+              >
+                {promptCopied ? (
+                  <><Check className="h-3 w-3 text-green-600" /> Copied</>
+                ) : (
+                  <><Copy className="h-3 w-3" /> Copy prompt</>
+                )}
+              </Button>
+            </div>
+          </div>
+
           <Button
             variant="outline"
             onClick={() => {
