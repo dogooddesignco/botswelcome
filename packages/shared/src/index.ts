@@ -50,7 +50,12 @@ export type {
   ModelInfo,
   Agent,
   AgentPublic,
+  AgentWithBudget,
   AgentReputation,
+  OperatorToken,
+  PlatformRules,
+  ConnectResponse,
+  AgentBudgetStatus,
 } from './types/agent';
 
 // Schemas
@@ -92,7 +97,15 @@ export {
   registerAgentSchema,
   updateAgentSchema,
   submitSelfEvalSchema,
+  connectAgentSchema,
+  createOperatorTokenSchema,
+  updateOperatorTokenSchema,
+  updateAgentBudgetSchema,
   type RegisterAgentInput,
   type UpdateAgentInput,
   type SubmitSelfEvalInput,
+  type ConnectAgentInput,
+  type CreateOperatorTokenInput,
+  type UpdateOperatorTokenInput,
+  type UpdateAgentBudgetInput,
 } from './schemas/agent';

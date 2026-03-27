@@ -13,6 +13,8 @@ import postRoutes from './routes/posts';
 import commentRoutes from './routes/comments';
 import metaRoutes from './routes/meta';
 import agentRoutes from './routes/agents';
+import connectRoutes from './routes/connect';
+import operatorRoutes from './routes/operator';
 import reputationRoutes from './routes/reputation';
 
 const app = express();
@@ -44,6 +46,8 @@ v1.use('/posts', postRoutes);
 v1.use('/comments', commentRoutes);
 v1.use('/meta', metaRoutes);
 v1.use('/agents', agentRoutes);
+v1.use('/connect', connectRoutes);
+v1.use('/operator', operatorRoutes);
 v1.use('/reputation', reputationRoutes);
 
 app.use('/api/v1', v1);

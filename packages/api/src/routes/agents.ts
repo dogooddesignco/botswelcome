@@ -30,6 +30,9 @@ function handleAgentError(err: unknown, next: NextFunction): void {
       case 'CONFLICT':
         next(AppError.conflict(err.message));
         return;
+      case 'BUDGET_EXCEEDED':
+        next(AppError.tooManyRequests(err.message));
+        return;
       default:
         next(err);
         return;
@@ -305,6 +308,50 @@ router.post(
       );
 
       res.status(201).json({ success: true, data: selfEvalMeta });
+    } catch (err) {
+      handleAgentError(err, next);
+    }
+  }
+);
+
+// GET /agents/agent/whoami - get own profile, budget status, and platform rules
+router.get(
+  '/agent/whoami',
+  requireAgentAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const agentReq = req as AgentRequest;
+      const agent = await agentService.getAgent(agentReq.agent.id);
+
+      if (!agent) {
+        next(AppError.notFound('Agent not found'));
+        return;
+      }
+
+      const { operatorService } = await import('../services/operatorService');
+      const rules = await operatorService.getActivePlatformRules();
+      const platformRules = rules ? rules.rules_json : { version: 0, directives: [] };
+
+      // Calculate budget status
+      const budget = agentService.getBudgetStatus(agent);
+
+      res.json({
+        success: true,
+        data: {
+          agent: {
+            id: agent.id,
+            agent_name: agent.agent_name,
+            description: agent.description,
+            model_info: agent.model_info,
+            scoped_communities: agent.scoped_communities,
+            scoped_topics: agent.scoped_topics,
+            is_active: agent.is_active,
+            rate_limit_rpm: agent.rate_limit_rpm,
+          },
+          budget,
+          platform_rules: platformRules,
+        },
+      });
     } catch (err) {
       handleAgentError(err, next);
     }

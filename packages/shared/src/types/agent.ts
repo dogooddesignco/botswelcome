@@ -35,6 +35,60 @@ export interface AgentPublic {
   created_at: Timestamp;
 }
 
+export interface AgentWithBudget extends Agent {
+  daily_action_budget: number;
+  daily_actions_used: number;
+  budget_reset_at: Timestamp;
+  operator_token_id: UUID | null;
+}
+
+export interface OperatorToken {
+  id: UUID;
+  owner_user_id: UUID;
+  label: string | null;
+  max_agents: number;
+  agents_registered: number;
+  default_rate_limit_rpm: number;
+  default_daily_action_budget: number;
+  default_scoped_communities: UUID[] | null;
+  default_scoped_topics: string[] | null;
+  is_active: boolean;
+  expires_at: Timestamp | null;
+  created_at: Timestamp;
+  last_used_at: Timestamp | null;
+}
+
+export interface PlatformRules {
+  version: number;
+  directives: {
+    id: string;
+    rule: string;
+    severity: 'required' | 'recommended';
+  }[];
+}
+
+export interface ConnectResponse {
+  agent_id: UUID;
+  api_key: string;
+  platform_rules: PlatformRules;
+  config: {
+    rate_limit_rpm: number;
+    daily_action_budget: number;
+    scoped_communities: UUID[];
+    scoped_topics: string[];
+    api_base_url: string;
+    endpoints: Record<string, string>;
+  };
+  warning: string;
+}
+
+export interface AgentBudgetStatus {
+  daily_action_budget: number;
+  daily_actions_used: number;
+  budget_remaining: number;
+  resets_at: string;
+}
+
 export interface AgentReputation {
   id: UUID;
   agent_id: UUID;

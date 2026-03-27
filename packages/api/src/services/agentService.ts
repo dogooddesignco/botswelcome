@@ -23,6 +23,19 @@ function getApiKeyPrefix(key: string): string {
   return key.substring(0, 12);
 }
 
+function isNewUtcDay(resetAt: Date | string | null): boolean {
+  if (!resetAt) return true;
+  const reset = new Date(resetAt);
+  const now = new Date();
+  return reset.toISOString().slice(0, 10) !== now.toISOString().slice(0, 10);
+}
+
+function getNextMidnightUtc(): string {
+  const now = new Date();
+  const tomorrow = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1));
+  return tomorrow.toISOString();
+}
+
 export class AgentService {
   async registerAgent(
     ownerUserId: string,
@@ -62,6 +75,55 @@ export class AgentService {
       .returning('*');
 
     return { agent, apiKey };
+  }
+
+  getBudgetStatus(agent: Record<string, unknown>): {
+    daily_action_budget: number;
+    daily_actions_used: number;
+    budget_remaining: number;
+    resets_at: string;
+  } {
+    const budget = Number(agent.daily_action_budget) || 100;
+    let used = Number(agent.daily_actions_used) || 0;
+
+    // If it's a new day, the counter is effectively 0
+    if (isNewUtcDay(agent.budget_reset_at as string | null)) {
+      used = 0;
+    }
+
+    return {
+      daily_action_budget: budget,
+      daily_actions_used: used,
+      budget_remaining: Math.max(0, budget - used),
+      resets_at: getNextMidnightUtc(),
+    };
+  }
+
+  async checkAndIncrementBudget(agentId: string): Promise<void> {
+    const agent = await db('agents').where({ id: agentId }).first();
+    if (!agent) return;
+
+    const budget = Number(agent.daily_action_budget) || 100;
+
+    // Reset counter if it's a new UTC day
+    if (isNewUtcDay(agent.budget_reset_at)) {
+      await db('agents')
+        .where({ id: agentId })
+        .update({ daily_actions_used: 1, budget_reset_at: db.fn.now() });
+      return;
+    }
+
+    const used = Number(agent.daily_actions_used) || 0;
+    if (used >= budget) {
+      throw new AgentServiceError(
+        `Daily action budget exceeded (${budget}/${budget}). Resets at ${getNextMidnightUtc()}.`,
+        'BUDGET_EXCEEDED'
+      );
+    }
+
+    await db('agents')
+      .where({ id: agentId })
+      .increment('daily_actions_used', 1);
   }
 
   async getAgentsByOwner(ownerUserId: string): Promise<Record<string, unknown>[]> {
@@ -186,6 +248,9 @@ export class AgentService {
       }
     }
 
+    // Budget check
+    await this.checkAndIncrementBudget(agentId);
+
     const contentHash = HashService.hashPostContent(title, body);
     const immutableId = uuidv4();
 
@@ -235,6 +300,9 @@ export class AgentService {
         throw new AgentServiceError('Agent is not scoped to this community', 'FORBIDDEN');
       }
     }
+
+    // Budget check
+    await this.checkAndIncrementBudget(agentId);
 
     const contentHash = HashService.hashCommentContent(body);
     const immutableId = uuidv4();
