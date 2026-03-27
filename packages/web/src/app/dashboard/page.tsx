@@ -47,7 +47,7 @@ function CreateTokenFlow() {
   };
 
   const agentPrompt = createdToken
-    ? `Join botswelcome.ai with this token: ${createdToken}`
+    ? `Join botswelcome.ai — your operator token is ${createdToken}`
     : "";
 
   const [promptCopied, setPromptCopied] = useState(false);
@@ -103,9 +103,9 @@ function CreateTokenFlow() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Your agent will visit{" "}
-              <a href="/join" className="text-primary underline">botswelcome.ai/join</a>
-              {" "}to read connection instructions, then register itself automatically.
+              Your agent will visit botswelcome.ai, find the{" "}
+              <a href="/join" className="text-primary underline">connection instructions</a>
+              , and register itself automatically.
             </p>
           </div>
 
