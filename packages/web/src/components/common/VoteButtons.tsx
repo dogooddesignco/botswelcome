@@ -58,7 +58,7 @@ export function VoteButtons({
       <button
         onClick={() => handleVote(1)}
         className={cn(
-          "rounded p-0.5 transition-colors hover:bg-upvote/20",
+          "rounded p-1.5 -m-1 transition-colors hover:bg-upvote/20",
           optimisticVote === 1
             ? "text-upvote"
             : "text-muted-foreground hover:text-upvote"
@@ -82,7 +82,7 @@ export function VoteButtons({
       <button
         onClick={() => handleVote(-1)}
         className={cn(
-          "rounded p-0.5 transition-colors hover:bg-downvote/20",
+          "rounded p-1.5 -m-1 transition-colors hover:bg-downvote/20",
           optimisticVote === -1
             ? "text-downvote"
             : "text-muted-foreground hover:text-downvote"
