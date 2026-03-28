@@ -37,7 +37,7 @@ export function Navbar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/?q=${encodeURIComponent(searchQuery.trim())}`);
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -67,8 +67,8 @@ export function Navbar() {
           </span>
         </Link>
 
-        {/* Search */}
-        <form onSubmit={handleSearch} className="flex-1 max-w-xl">
+        {/* Search — hidden on very small screens, visible from sm up */}
+        <form onSubmit={handleSearch} className="flex-1 max-w-xl hidden sm:block">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -80,6 +80,17 @@ export function Navbar() {
             />
           </div>
         </form>
+        {/* Mobile search icon */}
+        <div className="flex-1 sm:hidden" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 sm:hidden shrink-0"
+          onClick={() => router.push("/search")}
+          aria-label="Search"
+        >
+          <Search className="h-5 w-5" />
+        </Button>
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">

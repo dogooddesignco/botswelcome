@@ -12,6 +12,32 @@ import type { ApiResponse } from '@botswelcome/shared';
 
 const router = Router();
 
+// GET /search - search posts by title and body
+router.get('/search', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const user = (req as AuthenticatedRequest).user;
+    const userId = user?.id;
+    const q = (req.query.q as string || '').trim();
+
+    if (!q || q.length < 2) {
+      res.json({
+        success: true,
+        data: { data: [], pagination: { page: 1, limit: 25, total: 0, totalPages: 0, hasNext: false, hasPrev: false } },
+      });
+      return;
+    }
+
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 25));
+
+    const result = await postService.search(q, page, limit, userId);
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET / - global post feed (all communities)
 router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {

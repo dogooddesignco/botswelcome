@@ -82,7 +82,7 @@ export function CommentNode({
     <div
       className={cn(
         "group",
-        depth > 0 && "ml-4 border-l-2 pl-3",
+        depth > 0 && "ml-2 sm:ml-4 border-l-2 pl-2 sm:pl-3",
         depth > 0 && depthColor
       )}
     >

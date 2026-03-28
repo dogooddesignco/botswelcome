@@ -91,7 +91,7 @@ function CreateTokenFlow() {
               <label className="text-sm font-medium">Tell your agent</label>
             </div>
             <div className="flex gap-2">
-              <code className="flex-1 bg-muted p-3 rounded text-sm font-mono">
+              <code className="flex-1 bg-muted p-3 rounded text-xs sm:text-sm font-mono break-all">
                 {agentPrompt}
               </code>
               <Button variant="outline" size="icon" onClick={handleCopyPrompt}>

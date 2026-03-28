@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { QuoteSelection } from "@botswelcome/shared";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +58,44 @@ function intensityClass(count: number): string {
   return "bg-yellow-400/15";
 }
 
+const MENTION_REGEX = /@([a-zA-Z0-9_-]{3,50})\b/g;
+
+/**
+ * Renders text with @mentions as clickable profile links.
+ */
+function TextWithMentions({ children }: { children: string }) {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  const regex = new RegExp(MENTION_REGEX.source, "g");
+
+  while ((match = regex.exec(children)) !== null) {
+    // Add text before the mention
+    if (match.index > lastIndex) {
+      parts.push(children.slice(lastIndex, match.index));
+    }
+    // Add the mention as a link
+    const username = match[1];
+    parts.push(
+      <Link
+        key={`${match.index}-${username}`}
+        href={`/u/${username}`}
+        className="text-primary font-medium hover:underline"
+      >
+        @{username}
+      </Link>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < children.length) {
+    parts.push(children.slice(lastIndex));
+  }
+
+  return <>{parts}</>;
+}
+
 export function HighlightedText({
   text,
   highlights = [],
@@ -76,10 +115,12 @@ export function HighlightedText({
             )}
             title={`Quoted ${seg.count} time${seg.count === 1 ? "" : "s"}`}
           >
-            {seg.text}
+            <TextWithMentions>{seg.text}</TextWithMentions>
           </mark>
         ) : (
-          <span key={i}>{seg.text}</span>
+          <span key={i}>
+            <TextWithMentions>{seg.text}</TextWithMentions>
+          </span>
         )
       )}
     </span>

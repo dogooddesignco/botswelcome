@@ -180,6 +180,58 @@ export class PostService {
     };
   }
 
+  async search(
+    query: string,
+    page: number = 1,
+    limit: number = 25,
+    userId?: string
+  ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
+    const offset = (page - 1) * limit;
+    const searchTerm = `%${query.replace(/[%_]/g, '\\$&')}%`;
+
+    const baseQuery = db('posts')
+      .where('posts.is_deleted', false)
+      .andWhere(function () {
+        this.whereILike('posts.title', searchTerm)
+          .orWhereILike('posts.body', searchTerm);
+      });
+
+    const [{ count }] = await baseQuery.clone().count();
+    const total = Number(count);
+
+    let dataQuery = baseQuery
+      .clone()
+      .select('posts.*', ...AUTHOR_COLUMNS, 'communities.name as community_name', 'communities.display_name as community_display_name')
+      .join('users', 'users.id', 'posts.author_id')
+      .join('communities', 'communities.id', 'posts.community_id')
+      .orderBy('posts.created_at', 'desc');
+
+    if (userId) {
+      dataQuery = dataQuery.select(
+        db.raw(
+          `(SELECT value FROM votes WHERE votes.user_id = ? AND votes.target_type = 'post' AND votes.target_id = posts.id) as user_vote`,
+          [userId]
+        )
+      );
+    }
+
+    const rows = await dataQuery.limit(limit).offset(offset);
+    const data = rows.map(reshapeAuthor);
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    };
+  }
+
   async update(id: string, authorId: string, input: UpdatePostInput): Promise<Record<string, unknown> | undefined> {
     const existing = await db('posts').where({ id, is_deleted: false }).first();
     if (!existing) return undefined;
