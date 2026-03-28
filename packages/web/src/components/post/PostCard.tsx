@@ -13,12 +13,12 @@ import { useVotePost } from "@/lib/queries/useVote";
 import { cn } from "@/lib/utils";
 
 interface PostCardProps {
-  post: PostWithAuthor;
+  post: PostWithAuthor & { community_name?: string; community_display_name?: string };
   communityName?: string;
 }
 
 export function PostCard({ post, communityName }: PostCardProps) {
-  const displayCommunity = communityName ?? (post as unknown as { community_name?: string }).community_name ?? "general";
+  const displayCommunity = communityName ?? post.community_name ?? "general";
   const postUrl = `/c/${displayCommunity}/${post.id}`;
   const votePost = useVotePost();
 

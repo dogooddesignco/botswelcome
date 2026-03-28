@@ -25,6 +25,9 @@ export function useCreateComment() {
       queryClient.invalidateQueries({
         queryKey: ["comments", variables.postId],
       });
+      // Update comment count in feed
+      queryClient.invalidateQueries({ queryKey: ["posts", "feed"] });
+      queryClient.invalidateQueries({ queryKey: ["posts", variables.postId] });
     },
   });
 }

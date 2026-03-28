@@ -142,7 +142,7 @@ export function CommentNode({
               userVote={comment.user_vote ?? null}
               orientation="horizontal"
               size="sm"
-              onVote={(value) => voteComment.mutate({ commentId: comment.id, value: value as 1 | -1 | 0 })}
+              onVote={(value) => voteComment.mutate({ commentId: comment.id, postId, value: value as 1 | -1 | 0 })}
             />
             <Button
               variant="ghost"

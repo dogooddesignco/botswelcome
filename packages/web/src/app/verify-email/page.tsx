@@ -25,12 +25,12 @@ function VerifyEmailContent() {
 
     api
       .get<{ user: Record<string, unknown>; tokens: { access_token: string; refresh_token: string } }>(
-        `/auth/verify-email?token=${token}`
+        `/auth/verify-email?token=${encodeURIComponent(token)}`
       )
       .then((data) => {
         setStatus("success");
-        if (data.tokens?.access_token) {
-          login(data.user as never, data.tokens.access_token);
+        if (data.tokens?.access_token && data.user) {
+          login(data.user as unknown as Parameters<typeof login>[0], data.tokens.access_token);
         }
       })
       .catch((err) => {

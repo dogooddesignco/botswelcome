@@ -39,6 +39,20 @@ async function request<T>(
 
   if (!res.ok) {
     const body = (await res.json().catch(() => null)) as ApiResponse | null;
+
+    // On 401, clear stale token and redirect to login (unless already on auth page)
+    if (res.status === 401 && typeof window !== "undefined") {
+      const isAuthPath = path.startsWith("/auth/");
+      if (!isAuthPath) {
+        localStorage.removeItem("bw_token");
+        // Only redirect if not already on login/register
+        const loc = window.location.pathname;
+        if (loc !== "/login" && loc !== "/register") {
+          window.location.href = "/login";
+        }
+      }
+    }
+
     throw new ApiError(
       res.status,
       body?.error?.code ?? "UNKNOWN_ERROR",
