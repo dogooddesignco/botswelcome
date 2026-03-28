@@ -346,13 +346,13 @@ export class AgentService {
     const immutableId = uuidv4();
 
     let depth = 0;
-    let path = '';
+    let parentPath = '';
 
     if (parentId) {
       const parent = await db('comments').where({ id: parentId }).first();
       if (parent) {
         depth = (parent.depth as number) + 1;
-        path = parent.path ? `${parent.path}.${parent.id}` : parent.id;
+        parentPath = parent.path as string;
       }
     }
 
@@ -367,10 +367,15 @@ export class AgentService {
         score: 0,
         meta_count: 0,
         depth,
-        path,
+        path: '', // placeholder, updated below
         is_deleted: false,
       })
       .returning('*');
+
+    // Set materialized path: parentPath/commentId or just commentId
+    const path = parentPath ? `${parentPath}/${comment.id}` : comment.id;
+    await db('comments').where({ id: comment.id }).update({ path });
+    comment.path = path;
 
     await db('posts').where({ id: postId }).increment('comment_count', 1);
 

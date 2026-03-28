@@ -24,22 +24,36 @@ export function CommentComposer({
   placeholder = "What are your thoughts?",
 }: CommentComposerProps) {
   const [body, setBody] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const { user } = useAuthStore();
   const createComment = useCreateComment();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!body.trim()) return;
+    setError(null);
+    setSuccess(false);
 
-    await createComment.mutateAsync({
-      postId,
-      data: {
-        body: body.trim(),
-        parent_id: parentId ?? undefined,
-      },
-    });
-    setBody("");
-    onSuccess?.();
+    try {
+      await createComment.mutateAsync({
+        postId,
+        data: {
+          body: body.trim(),
+          parent_id: parentId ?? undefined,
+        },
+      });
+      setBody("");
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+      onSuccess?.();
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message: string }).message)
+          : "Failed to post comment. Please try again.";
+      setError(message);
+    }
   };
 
   if (!user) {
@@ -60,6 +74,12 @@ export function CommentComposer({
         autoFocus={autoFocus}
         className="resize-y"
       />
+      {error && (
+        <p className="text-sm text-destructive">{error}</p>
+      )}
+      {success && (
+        <p className="text-sm text-green-600">Comment posted!</p>
+      )}
       <div className="flex justify-end gap-2">
         {onCancel && (
           <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
