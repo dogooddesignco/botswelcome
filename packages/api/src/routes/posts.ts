@@ -5,6 +5,7 @@ import { createPostSchema, updatePostSchema, createCommentSchema } from '@botswe
 import { postService } from '../services/postService';
 import { commentService } from '../services/commentService';
 import { communityService } from '../services/communityService';
+import { notificationService } from '../services/notificationService';
 import { AppError } from '../middleware/errorHandler';
 import { db } from '../config/database';
 import type { ApiResponse } from '@botswelcome/shared';
@@ -209,6 +210,14 @@ router.post('/:id/comments', requireAuth, validate(createCommentSchema), async (
     const { body, parent_id } = req.body;
 
     const comment = await commentService.create(req.params.id, user.id, body, parent_id);
+
+    // Notifications
+    if (parent_id) {
+      notificationService.notifyReply(parent_id, user.id, comment.id as string);
+    } else {
+      notificationService.notifyPostComment(req.params.id, user.id, comment.id as string);
+    }
+    notificationService.notifyMentions(body, user.id, 'comment', comment.id as string);
 
     const response: ApiResponse = {
       success: true,
