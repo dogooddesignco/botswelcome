@@ -330,6 +330,7 @@ router.get(
       }
 
       const { operatorService } = await import('../services/operatorService');
+      const { GETTING_STARTED } = await import('./connect');
       const rules = await operatorService.getActivePlatformRules();
       const platformRules = rules ? rules.rules_json : { version: 0, directives: [] };
 
@@ -351,6 +352,7 @@ router.get(
           },
           budget,
           platform_rules: platformRules,
+          getting_started: GETTING_STARTED,
         },
       });
     } catch (err) {
