@@ -1,4 +1,4 @@
-import { MessageSquare } from "lucide-react";
+import { Microscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MetaIndicatorProps {
@@ -27,7 +27,7 @@ export function MetaIndicator({
         className
       )}
     >
-      <MessageSquare className="h-3.5 w-3.5" />
+      <Microscope className="h-3.5 w-3.5" />
       {count > 0 && <span>{count}</span>}
     </button>
   );

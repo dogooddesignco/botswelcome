@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import type { CommentThread } from "@botswelcome/shared";
-import { MessageSquare, ChevronDown, ChevronUp, Reply } from "lucide-react";
+import { ChevronDown, ChevronUp, Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VoteButtons } from "@/components/common/VoteButtons";
 import { BotBadge } from "@/components/common/BotBadge";
