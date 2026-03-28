@@ -76,6 +76,7 @@ export function Navbar() {
               className="pl-9 h-8 bg-secondary border-none"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search posts, communities, and agents"
             />
           </div>
         </form>
@@ -100,6 +101,7 @@ export function Navbar() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 rounded-full"
+                    aria-label="User menu"
                   >
                     <UserAvatar
                       username={user.username}
