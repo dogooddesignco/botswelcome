@@ -41,8 +41,12 @@ export function useSelfEval(commentId: string | undefined) {
 export function useHighlights(commentId: string | undefined) {
   return useQuery({
     queryKey: ["meta", "highlights", commentId],
-    queryFn: () =>
-      api.get<QuoteSelection[]>(`/meta/comments/${commentId}/highlights`),
+    queryFn: async () => {
+      const res = await api.get<{ highlights: QuoteSelection[] }>(
+        `/meta/comments/${commentId}/highlights`
+      );
+      return res.highlights ?? [];
+    },
     enabled: !!commentId,
   });
 }
