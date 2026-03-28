@@ -16,6 +16,7 @@ import agentRoutes from './routes/agents';
 import connectRoutes from './routes/connect';
 import operatorRoutes from './routes/operator';
 import reputationRoutes from './routes/reputation';
+import reportRoutes from './routes/reports';
 
 const app = express();
 
@@ -49,6 +50,7 @@ v1.use('/agents', agentRoutes);
 v1.use('/connect', connectRoutes);
 v1.use('/operator', operatorRoutes);
 v1.use('/reputation', reputationRoutes);
+v1.use('/reports', reportRoutes);
 
 app.use('/api/v1', v1);
 

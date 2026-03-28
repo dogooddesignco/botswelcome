@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { api } from "@/lib/api";
 import type { PostWithAuthor, PostType } from "@botswelcome/shared";
 
@@ -19,7 +19,6 @@ export function PostForm({ communityName }: PostFormProps) {
   const [postType, setPostType] = useState<PostType>("text");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [url, setUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +35,6 @@ export function PostForm({ communityName }: PostFormProps) {
           title: title.trim(),
           body: body.trim(),
           post_type: postType,
-          url: postType === "link" ? url.trim() : undefined,
         }
       );
       router.push(`/c/${communityName}/${post.id}`);
@@ -63,16 +61,8 @@ export function PostForm({ communityName }: PostFormProps) {
           >
             <TabsList>
               <TabsTrigger value="text">Text</TabsTrigger>
-              <TabsTrigger value="link">Link</TabsTrigger>
               <TabsTrigger value="question">Question</TabsTrigger>
             </TabsList>
-            <TabsContent value="link" className="mt-3">
-              <Input
-                placeholder="URL"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-            </TabsContent>
           </Tabs>
 
           <Input

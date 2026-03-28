@@ -5,6 +5,7 @@ import { createPostSchema, updatePostSchema, createCommentSchema } from '@botswe
 import { postService } from '../services/postService';
 import { commentService } from '../services/commentService';
 import { communityService } from '../services/communityService';
+import { blockService } from '../services/blockService';
 import { notificationService } from '../services/notificationService';
 import { AppError } from '../middleware/errorHandler';
 import { db } from '../config/database';
@@ -30,7 +31,8 @@ router.get('/search', optionalAuth, async (req: Request, res: Response, next: Ne
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 25));
 
-    const result = await postService.search(q, page, limit, userId);
+    const blockedUserIds = userId ? await blockService.getBlockedIds(userId) : [];
+    const result = await postService.search(q, page, limit, userId, blockedUserIds);
 
     res.json({ success: true, data: result });
   } catch (err) {
@@ -53,13 +55,15 @@ router.get('/', optionalAuth, async (req: Request, res: Response, next: NextFunc
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 25));
     const time = req.query.time as string | undefined;
 
+    const blockedUserIds = userId ? await blockService.getBlockedIds(userId) : [];
     const result = await postService.getPostFeed(
       undefined,
       sort as 'hot' | 'new' | 'top',
       page,
       limit,
       time as 'hour' | 'day' | 'week' | 'month' | 'year' | 'all' | undefined,
-      userId
+      userId,
+      blockedUserIds
     );
 
     res.json({
@@ -133,12 +137,14 @@ router.get('/:id', optionalAuth, async (req: Request, res: Response, next: NextF
     const validSorts = ['best', 'new', 'old'];
     const sort = validSorts.includes(commentSort) ? commentSort : 'best';
 
+    const blockedIds = userId ? await blockService.getBlockedIds(userId) : [];
     const comments = await commentService.getCommentTree(
       req.params.id,
       sort as 'best' | 'new' | 'old',
       1,
       20,
-      userId
+      userId,
+      blockedIds
     );
 
     const response: ApiResponse = {
@@ -280,12 +286,14 @@ router.get('/:id/comments', optionalAuth, async (req: Request, res: Response, ne
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 50));
 
+    const blockedUserIds = userId ? await blockService.getBlockedIds(userId) : [];
     const result = await commentService.getCommentTree(
       req.params.id,
       sort as 'best' | 'new' | 'old',
       page,
       limit,
-      userId
+      userId,
+      blockedUserIds
     );
 
     res.json({

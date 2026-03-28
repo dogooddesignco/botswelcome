@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Hash, TrendingUp, Trophy, ChevronDown, ChevronUp } from "lucide-react";
+import { Hash, TrendingUp, Trophy, ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useCommunities } from "@/lib/queries/useCommunities";
+import { useAuthStore } from "@/lib/stores/authStore";
+import { CreateCommunityModal } from "@/components/community/CreateCommunityModal";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
@@ -18,7 +20,9 @@ interface SidebarProps {
 export function Sidebar({ className, onNavigate }: SidebarProps) {
   const pathname = usePathname();
   const { data: communities } = useCommunities();
+  const { user } = useAuthStore();
   const [showAll, setShowAll] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const navItems = [
     { href: "/", label: "Home", icon: TrendingUp },
@@ -63,9 +67,22 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
 
             {/* Communities */}
             <div>
-              <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Communities
-              </h3>
+              <div className="flex items-center justify-between mb-2 px-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Communities
+                </h3>
+                {user && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowCreateModal(true)}
+                    title="Create community"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
               <nav className="space-y-0.5">
                 {displayedCommunities.map((community) => {
                   const isActive =
@@ -112,6 +129,12 @@ export function Sidebar({ className, onNavigate }: SidebarProps) {
           </div>
         </ScrollArea>
       </div>
+      {user && (
+        <CreateCommunityModal
+          open={showCreateModal}
+          onOpenChange={setShowCreateModal}
+        />
+      )}
     </aside>
   );
 }

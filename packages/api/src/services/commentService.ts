@@ -1,5 +1,6 @@
 import { db } from '../config/database';
 import { HashService } from './hashService';
+import { blockService } from './blockService';
 import type { CreateCommentInput, UpdateCommentInput } from '@botswelcome/shared';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -50,6 +51,11 @@ export class CommentService {
       }
       if (parent.post_id !== postId) {
         throw Object.assign(new Error('Parent comment does not belong to this post'), { statusCode: 400, code: 'BAD_REQUEST' });
+      }
+      // Check if the parent comment author has blocked the commenter
+      const parentAuthorBlocked = await blockService.isBlocked(parent.author_id as string, authorId);
+      if (parentAuthorBlocked) {
+        throw Object.assign(new Error('You cannot reply to this user'), { statusCode: 403, code: 'FORBIDDEN' });
       }
       depth = (parent.depth as number) + 1;
       parentPath = parent.path as string;
@@ -105,12 +111,18 @@ export class CommentService {
     sort: 'best' | 'new' | 'old' = 'best',
     page: number = 1,
     limit: number = 50,
-    userId?: string
+    userId?: string,
+    blockedUserIds?: string[]
   ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
     // Get all comments for the post (we need all to build the tree)
     // But we paginate on top-level comments
-    const topLevelQuery = db('comments')
-      .where({ post_id: postId, parent_id: null, is_deleted: false });
+    let topLevelQuery = db('comments')
+      .where({ post_id: postId, parent_id: null, is_deleted: false })
+      .andWhere('is_hidden', false);
+
+    if (blockedUserIds && blockedUserIds.length > 0) {
+      topLevelQuery = topLevelQuery.whereNotIn('author_id', blockedUserIds);
+    }
 
     const [{ count }] = await topLevelQuery.clone().count();
     const total = Number(count);
@@ -146,11 +158,16 @@ export class CommentService {
     // Build path prefix conditions: path LIKE 'topLevelId/%' OR path = 'topLevelId'
     let descendantsQuery = db('comments')
       .where('post_id', postId)
+      .andWhere('is_hidden', false)
       .andWhere(function () {
         for (const tlId of topLevelIds) {
           this.orWhere('path', 'like', `${tlId}/%`);
         }
       });
+
+    if (blockedUserIds && blockedUserIds.length > 0) {
+      descendantsQuery = descendantsQuery.whereNotIn('author_id', blockedUserIds);
+    }
 
     const descendants = await descendantsQuery;
 

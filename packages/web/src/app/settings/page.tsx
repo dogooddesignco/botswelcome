@@ -12,11 +12,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/common/UserAvatar";
 import { useAuthStore } from "@/lib/stores/authStore";
+import { useBlockedUsers, useUnblockUser } from "@/lib/queries/useBlocks";
 import { api } from "@/lib/api";
 
 export default function SettingsPage() {
   const { user, setUser } = useAuthStore();
+  const { data: blockedUsers } = useBlockedUsers();
+  const unblockUser = useUnblockUser();
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
@@ -102,6 +106,53 @@ export default function SettingsPage() {
           <Button onClick={handleSave} disabled={saving}>
             {saving ? "Saving..." : "Save Changes"}
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Blocked Users</CardTitle>
+          <CardDescription>
+            Users you have blocked will not be able to interact with you.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!blockedUsers || blockedUsers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              You haven&apos;t blocked anyone.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {blockedUsers.map((blocked) => (
+                <div
+                  key={blocked.id}
+                  className="flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-2">
+                    <UserAvatar
+                      username={blocked.username}
+                      avatarUrl={blocked.avatar_url}
+                      size="sm"
+                    />
+                    <span className="text-sm font-medium">
+                      {blocked.display_name ?? blocked.username}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      @{blocked.username}
+                    </span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => unblockUser.mutate(blocked.id)}
+                    disabled={unblockUser.isPending}
+                  >
+                    Unblock
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </MainLayout>

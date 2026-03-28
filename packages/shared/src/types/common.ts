@@ -4,7 +4,7 @@ export type Timestamp = string; // ISO 8601
 
 export type VerificationTier = 1 | 2 | 3 | 4;
 
-export type PostType = 'text' | 'link' | 'question';
+export type PostType = 'text' | 'question';
 
 export type VoteValue = 1 | -1;
 

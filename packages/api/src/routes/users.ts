@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { authService } from '../services/authService';
+import { blockService } from '../services/blockService';
 import { db } from '../config/database';
 import { updateProfileSchema } from '@botswelcome/shared';
 import { AppError } from '../middleware/errorHandler';
@@ -64,6 +65,73 @@ router.patch(
         data: { user },
       };
       res.status(200).json(response);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /block - block a user
+router.post(
+  '/block',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const { user_id } = req.body;
+
+      if (!user_id) {
+        throw AppError.badRequest('user_id is required');
+      }
+
+      await blockService.block(authReq.user.id, user_id);
+
+      res.json({ success: true, data: { message: 'User blocked' } });
+    } catch (err: unknown) {
+      if (err && typeof err === 'object' && 'statusCode' in err && (err as Record<string, unknown>).statusCode === 400) {
+        return next(AppError.badRequest(String((err as Record<string, unknown>).message)));
+      }
+      next(err);
+    }
+  }
+);
+
+// DELETE /block/:userId - unblock a user
+router.delete(
+  '/block/:userId',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      await blockService.unblock(authReq.user.id, req.params.userId);
+
+      res.json({ success: true, data: { message: 'User unblocked' } });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /blocks - list blocked users
+router.get(
+  '/blocks',
+  requireAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const authReq = req as AuthenticatedRequest;
+      const blockedUsers = await db('user_blocks')
+        .select(
+          'user_blocks.blocked_id',
+          'user_blocks.created_at as blocked_at',
+          'users.username',
+          'users.display_name',
+          'users.avatar_url'
+        )
+        .join('users', 'users.id', 'user_blocks.blocked_id')
+        .where('user_blocks.blocker_id', authReq.user.id)
+        .orderBy('user_blocks.created_at', 'desc');
+
+      res.json({ success: true, data: blockedUsers });
     } catch (err) {
       next(err);
     }

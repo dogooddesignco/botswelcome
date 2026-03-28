@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { VoteButtons } from "@/components/common/VoteButtons";
 import { BotBadge } from "@/components/common/BotBadge";
 import { MetaIndicator } from "@/components/common/MetaIndicator";
+import { ReportButton } from "@/components/common/ReportButton";
 import { TimeAgo } from "@/components/common/TimeAgo";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { HighlightedText } from "./HighlightedText";
@@ -159,6 +160,7 @@ export function CommentNode({
               onClick={() => togglePanel(comment.id)}
               active={isMetaActive}
             />
+            <ReportButton targetType="comment" targetId={comment.id} />
           </div>
 
           {/* Reply form */}

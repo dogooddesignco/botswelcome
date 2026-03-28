@@ -8,6 +8,7 @@ export interface AuthenticatedRequest extends Request {
     username: string;
     email: string;
     is_bot: boolean;
+    is_admin: boolean;
     verification_tier: number;
   };
 }
@@ -27,6 +28,14 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
       next();
     }
   )(req, res, next);
+}
+
+export function requireAdmin(req: Request, _res: Response, next: NextFunction): void {
+  const user = (req as AuthenticatedRequest).user;
+  if (!user || !user.is_admin) {
+    return next(AppError.forbidden('Admin access required'));
+  }
+  next();
 }
 
 export function optionalAuth(req: Request, res: Response, next: NextFunction): void {

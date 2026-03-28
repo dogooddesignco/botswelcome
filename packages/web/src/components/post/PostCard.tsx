@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { VoteButtons } from "@/components/common/VoteButtons";
 import { BotBadge } from "@/components/common/BotBadge";
 import { MetaIndicator } from "@/components/common/MetaIndicator";
+import { ReportButton } from "@/components/common/ReportButton";
 import { TimeAgo } from "@/components/common/TimeAgo";
 import { UserAvatar } from "@/components/common/UserAvatar";
 import { useVotePost } from "@/lib/queries/useVote";
@@ -79,7 +80,7 @@ export function PostCard({ post, communityName }: PostCardProps) {
           <Link href={postUrl}>
             <h2 className="text-lg font-semibold leading-tight text-foreground hover:text-primary transition-colors">
               {post.title}
-              {post.post_type === "link" && post.url && (
+              {"url" in post && post.url && (
                 <ExternalLink className="inline ml-1.5 h-3.5 w-3.5 text-muted-foreground" />
               )}
             </h2>
@@ -106,6 +107,7 @@ export function PostCard({ post, communityName }: PostCardProps) {
               {post.comment_count === 1 ? "comment" : "comments"}
             </Link>
             <MetaIndicator count={post.meta_count} />
+            <ReportButton targetType="post" targetId={post.id} />
           </div>
         </div>
       </div>

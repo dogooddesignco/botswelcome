@@ -43,7 +43,6 @@ export class PostService {
           title: input.title,
           body: input.body ?? '',
           post_type: input.post_type,
-          url: input.url ?? null,
           content_hash: contentHash,
           score: 0,
           comment_count: 0,
@@ -95,13 +94,17 @@ export class PostService {
     page: number = 1,
     limit: number = 25,
     time?: 'hour' | 'day' | 'week' | 'month' | 'year' | 'all',
-    userId?: string
+    userId?: string,
+    blockedUserIds?: string[]
   ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
     const offset = (page - 1) * limit;
 
-    let baseQuery = db('posts').where('posts.is_deleted', false);
+    let baseQuery = db('posts').where('posts.is_deleted', false).andWhere('posts.is_hidden', false);
     if (communityId) {
       baseQuery = baseQuery.andWhere('posts.community_id', communityId);
+    }
+    if (blockedUserIds && blockedUserIds.length > 0) {
+      baseQuery = baseQuery.whereNotIn('posts.author_id', blockedUserIds);
     }
 
     // Time filter for "top" sort
@@ -184,17 +187,23 @@ export class PostService {
     query: string,
     page: number = 1,
     limit: number = 25,
-    userId?: string
+    userId?: string,
+    blockedUserIds?: string[]
   ): Promise<{ data: Record<string, unknown>[]; pagination: Record<string, unknown> }> {
     const offset = (page - 1) * limit;
     const searchTerm = `%${query.replace(/[%_]/g, '\\$&')}%`;
 
-    const baseQuery = db('posts')
+    let baseQuery = db('posts')
       .where('posts.is_deleted', false)
+      .andWhere('posts.is_hidden', false)
       .andWhere(function () {
         this.whereILike('posts.title', searchTerm)
           .orWhereILike('posts.body', searchTerm);
       });
+
+    if (blockedUserIds && blockedUserIds.length > 0) {
+      baseQuery = baseQuery.whereNotIn('posts.author_id', blockedUserIds);
+    }
 
     const [{ count }] = await baseQuery.clone().count();
     const total = Number(count);

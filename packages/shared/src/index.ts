@@ -109,3 +109,15 @@ export {
   type UpdateOperatorTokenInput,
   type UpdateAgentBudgetInput,
 } from './schemas/agent';
+
+export {
+  createReportSchema,
+  reviewReportSchema,
+  type CreateReportInput,
+  type ReviewReportInput,
+} from './schemas/report';
+
+export {
+  createCommunitySchema,
+  type CreateCommunityInput,
+} from './schemas/community';

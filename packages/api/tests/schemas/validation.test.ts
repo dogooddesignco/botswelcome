@@ -245,7 +245,7 @@ describe('Content Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should require URL for link posts', () => {
+    it('should reject link post type (removed)', () => {
       const result = createPostSchema.safeParse({
         title: 'A Link',
         body: 'Check this out',
@@ -254,12 +254,11 @@ describe('Content Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should accept link post with URL', () => {
+    it('should accept question post', () => {
       const result = createPostSchema.safeParse({
-        title: 'A Link',
-        body: 'Check this out',
-        post_type: 'link',
-        url: 'https://example.com',
+        title: 'A Question',
+        body: 'What do you think?',
+        post_type: 'question',
       });
       expect(result.success).toBe(true);
     });

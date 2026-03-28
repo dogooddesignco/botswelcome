@@ -4,6 +4,7 @@ import { validate } from '../middleware/validate';
 import { createPostSchema } from '@botswelcome/shared';
 import { communityService } from '../services/communityService';
 import { postService } from '../services/postService';
+import { blockService } from '../services/blockService';
 import { AppError } from '../middleware/errorHandler';
 import type { ApiResponse } from '@botswelcome/shared';
 
@@ -62,6 +63,24 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     if (err && typeof err === 'object' && 'statusCode' in err && (err as Record<string, unknown>).statusCode === 409) {
       return next(AppError.conflict(String((err as Record<string, unknown>).message)));
     }
+    next(err);
+  }
+});
+
+// GET /check-name - check community name availability
+router.get('/check-name', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const name = req.query.name as string;
+    const displayName = req.query.display_name as string | undefined;
+
+    if (!name) {
+      throw AppError.badRequest('name query parameter is required');
+    }
+
+    const result = await communityService.checkNameAvailability(name, displayName);
+
+    res.json({ success: true, data: result });
+  } catch (err) {
     next(err);
   }
 });
@@ -231,13 +250,15 @@ router.get('/:name/posts', optionalAuth, async (req: Request, res: Response, nex
     const user = (req as AuthenticatedRequest).user;
     const userId = user?.id;
 
+    const blockedUserIds = userId ? await blockService.getBlockedIds(userId) : [];
     const result = await postService.getPostFeed(
       community.id as string,
       sort as 'hot' | 'new' | 'top',
       page,
       limit,
       time as 'hour' | 'day' | 'week' | 'month' | 'year' | 'all' | undefined,
-      userId
+      userId,
+      blockedUserIds
     );
 
     res.json({

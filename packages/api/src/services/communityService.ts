@@ -1,6 +1,46 @@
 import { db } from '../config/database';
+import { containsBlockedTerm } from '../config/blocklist';
 
 export class CommunityService {
+  async checkNameAvailability(
+    name: string,
+    displayName?: string
+  ): Promise<{ available: boolean; reason?: string; similar?: string[] }> {
+    // 1. Check exact match (case-insensitive)
+    const exactMatch = await db('communities')
+      .whereRaw('LOWER(name) = ?', [name.toLowerCase()])
+      .first();
+
+    if (exactMatch) {
+      return { available: false, reason: 'Community name already taken' };
+    }
+
+    // 2. Check similar names using pg_trgm similarity
+    const similarRows = await db('communities')
+      .select('name')
+      .whereRaw('similarity(name, ?) > 0.4', [name])
+      .orderByRaw('similarity(name, ?) DESC', [name])
+      .limit(5);
+
+    const similar = similarRows.map((r: Record<string, unknown>) => r.name as string);
+
+    if (similar.length > 0) {
+      return {
+        available: false,
+        reason: 'Community name is too similar to existing communities',
+        similar,
+      };
+    }
+
+    // 3. Check against blocklist
+    const textToCheck = displayName ? `${name} ${displayName}` : name;
+    if (containsBlockedTerm(textToCheck)) {
+      return { available: false, reason: 'Community name contains prohibited content' };
+    }
+
+    return { available: true };
+  }
+
   async create(
     creatorId: string,
     name: string,
@@ -8,10 +48,14 @@ export class CommunityService {
     description?: string,
     settings?: Record<string, unknown>
   ): Promise<Record<string, unknown>> {
-    // Check for name uniqueness
-    const existing = await db('communities').where({ name }).first();
-    if (existing) {
-      throw Object.assign(new Error('Community name already taken'), { statusCode: 409, code: 'CONFLICT' });
+    // Check name availability (exact, similarity, blocklist)
+    const availability = await this.checkNameAvailability(name, displayName);
+    if (!availability.available) {
+      throw Object.assign(new Error(availability.reason || 'Community name unavailable'), {
+        statusCode: 409,
+        code: 'CONFLICT',
+        similar: availability.similar,
+      });
     }
 
     const defaultSettings = {

@@ -46,9 +46,9 @@ export function PostContent({ post }: PostContentProps) {
         <h1 className="text-2xl font-bold mt-2">{post.title}</h1>
 
         {/* Link */}
-        {post.post_type === "link" && post.url && (
+        {"url" in post && post.url && (
           <a
-            href={post.url}
+            href={String(post.url)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm text-meta-accent hover:underline"

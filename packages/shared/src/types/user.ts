@@ -14,6 +14,8 @@ export interface User {
   updated_at: Timestamp;
   last_active_at: Timestamp | null;
   is_deleted: boolean;
+  is_admin: boolean;
+  is_operator: boolean;
 }
 
 export interface UserPublic {
