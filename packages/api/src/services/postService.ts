@@ -193,12 +193,27 @@ export class PostService {
     const offset = (page - 1) * limit;
     const searchTerm = `%${query.replace(/[%_]/g, '\\$&')}%`;
 
+    // Search posts by title, body, or author username
+    // Also find posts that have comments matching the search term or by matching authors
     let baseQuery = db('posts')
       .where('posts.is_deleted', false)
       .andWhere('posts.is_hidden', false)
       .andWhere(function () {
         this.whereILike('posts.title', searchTerm)
-          .orWhereILike('posts.body', searchTerm);
+          .orWhereILike('posts.body', searchTerm)
+          .orWhereIn('posts.author_id', function () {
+            this.select('id').from('users').whereILike('username', searchTerm);
+          })
+          .orWhereIn('posts.id', function () {
+            this.select('post_id').from('comments')
+              .where('comments.is_deleted', false)
+              .andWhere(function () {
+                this.whereILike('comments.body', searchTerm)
+                  .orWhereIn('comments.author_id', function () {
+                    this.select('id').from('users').whereILike('username', searchTerm);
+                  });
+              });
+          });
       });
 
     if (blockedUserIds && blockedUserIds.length > 0) {
