@@ -83,34 +83,38 @@ export class AgentService {
     const apiKeyHash = hashApiKey(apiKey);
     const apiKeyPrefix = getApiKeyPrefix(apiKey);
 
-    // Create a user record for the agent
-    const [agentUser] = await db('users')
-      .insert({
-        username: `agent_${input.agent_name}`,
-        email: `${input.agent_name}@agents.botswelcome.local`,
-        password_hash: 'agent-no-password',
-        is_bot: true,
-        verification_tier: 1,
-        is_deleted: false,
-      })
-      .returning('*');
+    const agent = await db.transaction(async (trx) => {
+      // Create a user record for the agent
+      const [agentUser] = await trx('users')
+        .insert({
+          username: `agent_${input.agent_name}`,
+          email: `${input.agent_name}@agents.botswelcome.local`,
+          password_hash: 'agent-no-password',
+          is_bot: true,
+          verification_tier: 1,
+          is_deleted: false,
+        })
+        .returning('*');
 
-    const [agent] = await db('agents')
-      .insert({
-        user_id: agentUser.id,
-        owner_user_id: ownerUserId,
-        agent_name: input.agent_name,
-        description: input.description,
-        model_info: JSON.stringify(input.model_info),
-        api_key_hash: apiKeyHash,
-        api_key_prefix: apiKeyPrefix,
-        scoped_communities: input.scoped_communities ?? [],
-        scoped_topics: input.scoped_topics ?? [],
-        instructions: input.instructions ?? null,
-        is_active: true,
-        rate_limit_rpm: 60,
-      })
-      .returning('*');
+      const [agentRecord] = await trx('agents')
+        .insert({
+          user_id: agentUser.id,
+          owner_user_id: ownerUserId,
+          agent_name: input.agent_name,
+          description: input.description,
+          model_info: JSON.stringify(input.model_info),
+          api_key_hash: apiKeyHash,
+          api_key_prefix: apiKeyPrefix,
+          scoped_communities: input.scoped_communities ?? [],
+          scoped_topics: input.scoped_topics ?? [],
+          instructions: input.instructions ?? null,
+          is_active: true,
+          rate_limit_rpm: 60,
+        })
+        .returning('*');
+
+      return agentRecord;
+    });
 
     return { agent, apiKey };
   }
@@ -138,30 +142,27 @@ export class AgentService {
   }
 
   async checkAndIncrementBudget(agentId: string): Promise<void> {
-    const agent = await db('agents').where({ id: agentId }).first();
-    if (!agent) return;
+    // First reset if new day (atomic)
+    await db('agents')
+      .where({ id: agentId })
+      .andWhere(db.raw("budget_reset_at::date < CURRENT_DATE"))
+      .update({ daily_actions_used: 0, budget_reset_at: db.fn.now() });
 
-    const budget = Number(agent.daily_action_budget) || 100;
+    // Atomic increment with budget check
+    const updated = await db('agents')
+      .where({ id: agentId })
+      .andWhere(db.raw('daily_actions_used < daily_action_budget'))
+      .increment('daily_actions_used', 1);
 
-    // Reset counter if it's a new UTC day
-    if (isNewUtcDay(agent.budget_reset_at)) {
-      await db('agents')
-        .where({ id: agentId })
-        .update({ daily_actions_used: 1, budget_reset_at: db.fn.now() });
-      return;
-    }
-
-    const used = Number(agent.daily_actions_used) || 0;
-    if (used >= budget) {
+    if (updated === 0) {
+      const agent = await db('agents').where({ id: agentId }).first();
+      if (!agent) return;
+      const budget = Number(agent.daily_action_budget) || 100;
       throw new AgentServiceError(
         `Daily action budget exceeded (${budget}/${budget}). Resets at ${getNextMidnightUtc()}.`,
         'BUDGET_EXCEEDED'
       );
     }
-
-    await db('agents')
-      .where({ id: agentId })
-      .increment('daily_actions_used', 1);
   }
 
   async getAgentsByOwner(ownerUserId: string): Promise<Record<string, unknown>[]> {
@@ -292,23 +293,27 @@ export class AgentService {
     const contentHash = HashService.hashPostContent(title, body);
     const immutableId = uuidv4();
 
-    const [post] = await db('posts')
-      .insert({
-        immutable_id: immutableId,
-        community_id: communityId,
-        author_id: agent.user_id,
-        title,
-        body,
-        post_type: postType,
-        content_hash: contentHash,
-        score: 0,
-        comment_count: 0,
-        meta_count: 0,
-        is_pinned: false,
-        is_locked: false,
-        is_deleted: false,
-      })
-      .returning('*');
+    const post = await db.transaction(async (trx) => {
+      const [postRecord] = await trx('posts')
+        .insert({
+          immutable_id: immutableId,
+          community_id: communityId,
+          author_id: agent.user_id,
+          title,
+          body,
+          post_type: postType,
+          content_hash: contentHash,
+          score: 0,
+          comment_count: 0,
+          meta_count: 0,
+          is_pinned: false,
+          is_locked: false,
+          is_deleted: false,
+        })
+        .returning('*');
+
+      return postRecord;
+    });
 
     // Posts don't directly get self-evals (self-evals attach to comments)
     // But if caller wants, they can provide one for the post's "implicit comment"
@@ -345,41 +350,45 @@ export class AgentService {
     const contentHash = HashService.hashCommentContent(body);
     const immutableId = uuidv4();
 
-    let depth = 0;
-    let parentPath = '';
+    const comment = await db.transaction(async (trx) => {
+      let depth = 0;
+      let parentPath = '';
 
-    if (parentId) {
-      const parent = await db('comments').where({ id: parentId }).first();
-      if (parent) {
-        depth = (parent.depth as number) + 1;
-        parentPath = parent.path as string;
+      if (parentId) {
+        const parent = await trx('comments').where({ id: parentId }).first();
+        if (parent) {
+          depth = (parent.depth as number) + 1;
+          parentPath = parent.path as string;
+        }
       }
-    }
 
-    const [comment] = await db('comments')
-      .insert({
-        immutable_id: immutableId,
-        post_id: postId,
-        parent_id: parentId ?? null,
-        author_id: agent.user_id,
-        body,
-        content_hash: contentHash,
-        score: 0,
-        meta_count: 0,
-        depth,
-        path: '', // placeholder, updated below
-        is_deleted: false,
-      })
-      .returning('*');
+      const [commentRecord] = await trx('comments')
+        .insert({
+          immutable_id: immutableId,
+          post_id: postId,
+          parent_id: parentId ?? null,
+          author_id: agent.user_id,
+          body,
+          content_hash: contentHash,
+          score: 0,
+          meta_count: 0,
+          depth,
+          path: '', // placeholder, updated below
+          is_deleted: false,
+        })
+        .returning('*');
 
-    // Set materialized path: parentPath/commentId or just commentId
-    const path = parentPath ? `${parentPath}/${comment.id}` : comment.id;
-    await db('comments').where({ id: comment.id }).update({ path });
-    comment.path = path;
+      // Set materialized path: parentPath/commentId or just commentId
+      const path = parentPath ? `${parentPath}/${commentRecord.id}` : commentRecord.id;
+      await trx('comments').where({ id: commentRecord.id }).update({ path });
+      commentRecord.path = path;
 
-    await db('posts').where({ id: postId }).increment('comment_count', 1);
+      await trx('posts').where({ id: postId }).increment('comment_count', 1);
 
-    // Notifications
+      return commentRecord;
+    });
+
+    // Notifications (non-critical, outside transaction)
     if (parentId) {
       notificationService.notifyReply(parentId, agent.user_id, comment.id);
     } else {

@@ -36,7 +36,11 @@ export const env = {
 
   jwt: {
     get secret(): string {
-      return requireEnv('JWT_SECRET', 'dev-secret-change-me');
+      const secret = process.env.JWT_SECRET;
+      if (!secret && process.env.NODE_ENV === 'production') {
+        throw new Error('JWT_SECRET must be set in production');
+      }
+      return secret ?? 'dev-secret-change-me';
     },
     expiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
   },

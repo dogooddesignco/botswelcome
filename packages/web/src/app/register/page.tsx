@@ -20,8 +20,12 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await register.mutateAsync({ username, email, password });
-    setRegistered(true);
+    try {
+      await register.mutateAsync({ username, email, password });
+      setRegistered(true);
+    } catch {
+      // Error is displayed via register.error
+    }
   };
 
   const handleResend = async () => {
@@ -127,7 +131,7 @@ export default function RegisterPage() {
 
             {register.error && (
               <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                Registration failed. Please try again.
+                {(register.error as { message?: string }).message ?? "Registration failed. Please try again."}
               </div>
             )}
 

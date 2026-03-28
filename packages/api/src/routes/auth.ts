@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import rateLimit from 'express-rate-limit';
 import { validate } from '../middleware/validate';
 import { requireAuth } from '../middleware/auth';
 import { authService } from '../services/authService';
@@ -8,8 +9,33 @@ import type { ApiResponse } from '@botswelcome/shared';
 
 const router = Router();
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many login attempts. Please try again later.' } },
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many registration attempts. Please try again later.' } },
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: { code: 'RATE_LIMITED', message: 'Too many refresh attempts. Please try again later.' } },
+});
+
 router.post(
   '/register',
+  registerLimiter,
   validate(registerSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -28,6 +54,7 @@ router.post(
 
 router.post(
   '/login',
+  loginLimiter,
   validate(loginSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -46,6 +73,7 @@ router.post(
 
 router.post(
   '/refresh',
+  refreshLimiter,
   validate(refreshTokenSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {

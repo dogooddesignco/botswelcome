@@ -34,36 +34,38 @@ export class PostService {
     const contentHash = HashService.hashPostContent(input.title, input.body ?? '');
     const immutableId = uuidv4();
 
-    const [post] = await db('posts')
-      .insert({
-        immutable_id: immutableId,
-        community_id: communityId,
-        author_id: authorId,
-        title: input.title,
-        body: input.body ?? '',
-        post_type: input.post_type,
-        url: input.url ?? null,
-        content_hash: contentHash,
-        score: 0,
-        comment_count: 0,
-        meta_count: 0,
-        is_pinned: false,
-        is_locked: false,
-        is_deleted: false,
-      })
-      .returning('*');
+    return db.transaction(async (trx) => {
+      const [post] = await trx('posts')
+        .insert({
+          immutable_id: immutableId,
+          community_id: communityId,
+          author_id: authorId,
+          title: input.title,
+          body: input.body ?? '',
+          post_type: input.post_type,
+          url: input.url ?? null,
+          content_hash: contentHash,
+          score: 0,
+          comment_count: 0,
+          meta_count: 0,
+          is_pinned: false,
+          is_locked: false,
+          is_deleted: false,
+        })
+        .returning('*');
 
-    // Auto-upvote by creator
-    await db('votes').insert({
-      user_id: authorId,
-      target_type: 'post',
-      target_id: post.id,
-      value: 1,
+      // Auto-upvote by creator
+      await trx('votes').insert({
+        user_id: authorId,
+        target_type: 'post',
+        target_id: post.id,
+        value: 1,
+      });
+      await trx('posts').where({ id: post.id }).update({ score: 1 });
+      post.score = 1;
+
+      return post;
     });
-    await db('posts').where({ id: post.id }).update({ score: 1 });
-    post.score = 1;
-
-    return post;
   }
 
   async getById(id: string, userId?: string): Promise<Record<string, unknown> | undefined> {
@@ -111,11 +113,14 @@ export class PostService {
         month: '1 month',
         year: '1 year',
       };
-      baseQuery = baseQuery.andWhere(
-        'posts.created_at',
-        '>=',
-        db.raw(`NOW() - INTERVAL '${intervals[time]}'`)
-      );
+      const interval = intervals[time];
+      if (interval) {
+        baseQuery = baseQuery.andWhere(
+          'posts.created_at',
+          '>=',
+          db.raw(`NOW() - INTERVAL ?`, [interval])
+        );
+      }
     }
 
     // Count total
@@ -226,41 +231,32 @@ export class PostService {
       throw Object.assign(new Error('Post not found'), { statusCode: 404, code: 'NOT_FOUND' });
     }
 
-    const existingVote = await db('votes')
-      .where({ user_id: userId, target_type: 'post', target_id: postId })
-      .first();
-
-    if (value === 0) {
-      // Remove vote
-      if (existingVote) {
-        await db('votes')
+    return db.transaction(async (trx) => {
+      if (value === 0) {
+        await trx('votes')
           .where({ user_id: userId, target_type: 'post', target_id: postId })
           .delete();
+      } else {
+        // Atomic upsert — insert or update on conflict
+        await trx.raw(
+          `INSERT INTO votes (user_id, target_type, target_id, value)
+           VALUES (?, 'post', ?, ?)
+           ON CONFLICT (user_id, target_type, target_id)
+           DO UPDATE SET value = EXCLUDED.value`,
+          [userId, postId, value]
+        );
       }
-    } else if (existingVote) {
-      // Update existing vote
-      await db('votes')
-        .where({ user_id: userId, target_type: 'post', target_id: postId })
-        .update({ value });
-    } else {
-      // Insert new vote
-      await db('votes').insert({
-        user_id: userId,
-        target_type: 'post',
-        target_id: postId,
-        value,
-      });
-    }
 
-    // Recompute cached score
-    const [{ total }] = await db('votes')
-      .where({ target_type: 'post', target_id: postId })
-      .sum('value as total');
+      // Recompute cached score
+      const [{ total }] = await trx('votes')
+        .where({ target_type: 'post', target_id: postId })
+        .sum('value as total');
 
-    const newScore = Number(total) || 0;
-    await db('posts').where({ id: postId }).update({ score: newScore });
+      const newScore = Number(total) || 0;
+      await trx('posts').where({ id: postId }).update({ score: newScore });
 
-    return { score: newScore };
+      return { score: newScore };
+    });
   }
 }
 

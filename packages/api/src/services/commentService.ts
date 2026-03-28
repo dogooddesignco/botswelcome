@@ -55,39 +55,43 @@ export class CommentService {
       parentPath = parent.path as string;
     }
 
-    const [comment] = await db('comments')
-      .insert({
-        immutable_id: immutableId,
-        post_id: postId,
-        parent_id: parentId ?? null,
-        author_id: authorId,
-        body,
-        content_hash: contentHash,
-        score: 0,
-        meta_count: 0,
-        depth,
-        path: '', // placeholder, will update after we have the id
-        is_deleted: false,
-      })
-      .returning('*');
+    const comment = await db.transaction(async (trx) => {
+      const [commentRecord] = await trx('comments')
+        .insert({
+          immutable_id: immutableId,
+          post_id: postId,
+          parent_id: parentId ?? null,
+          author_id: authorId,
+          body,
+          content_hash: contentHash,
+          score: 0,
+          meta_count: 0,
+          depth,
+          path: '', // placeholder, will update after we have the id
+          is_deleted: false,
+        })
+        .returning('*');
 
-    // Set materialized path: parent_path/comment_id or just comment_id
-    const path = parentPath ? `${parentPath}/${comment.id}` : comment.id;
-    await db('comments').where({ id: comment.id }).update({ path });
-    comment.path = path;
+      // Set materialized path: parent_path/comment_id or just comment_id
+      const path = parentPath ? `${parentPath}/${commentRecord.id}` : commentRecord.id;
+      await trx('comments').where({ id: commentRecord.id }).update({ path });
+      commentRecord.path = path;
 
-    // Increment post comment count
-    await db('posts').where({ id: postId }).increment('comment_count', 1);
+      // Increment post comment count
+      await trx('posts').where({ id: postId }).increment('comment_count', 1);
 
-    // Auto-upvote by creator
-    await db('votes').insert({
-      user_id: authorId,
-      target_type: 'comment',
-      target_id: comment.id,
-      value: 1,
+      // Auto-upvote by creator
+      await trx('votes').insert({
+        user_id: authorId,
+        target_type: 'comment',
+        target_id: commentRecord.id,
+        value: 1,
+      });
+      await trx('comments').where({ id: commentRecord.id }).update({ score: 1 });
+      commentRecord.score = 1;
+
+      return commentRecord;
     });
-    await db('comments').where({ id: comment.id }).update({ score: 1 });
-    comment.score = 1;
 
     return comment;
   }
@@ -285,38 +289,32 @@ export class CommentService {
       throw Object.assign(new Error('Comment not found'), { statusCode: 404, code: 'NOT_FOUND' });
     }
 
-    const existingVote = await db('votes')
-      .where({ user_id: userId, target_type: 'comment', target_id: commentId })
-      .first();
-
-    if (value === 0) {
-      if (existingVote) {
-        await db('votes')
+    return db.transaction(async (trx) => {
+      if (value === 0) {
+        await trx('votes')
           .where({ user_id: userId, target_type: 'comment', target_id: commentId })
           .delete();
+      } else {
+        // Atomic upsert — insert or update on conflict
+        await trx.raw(
+          `INSERT INTO votes (user_id, target_type, target_id, value)
+           VALUES (?, 'comment', ?, ?)
+           ON CONFLICT (user_id, target_type, target_id)
+           DO UPDATE SET value = EXCLUDED.value`,
+          [userId, commentId, value]
+        );
       }
-    } else if (existingVote) {
-      await db('votes')
-        .where({ user_id: userId, target_type: 'comment', target_id: commentId })
-        .update({ value });
-    } else {
-      await db('votes').insert({
-        user_id: userId,
-        target_type: 'comment',
-        target_id: commentId,
-        value,
-      });
-    }
 
-    // Recompute cached score
-    const [{ total }] = await db('votes')
-      .where({ target_type: 'comment', target_id: commentId })
-      .sum('value as total');
+      // Recompute cached score
+      const [{ total }] = await trx('votes')
+        .where({ target_type: 'comment', target_id: commentId })
+        .sum('value as total');
 
-    const newScore = Number(total) || 0;
-    await db('comments').where({ id: commentId }).update({ score: newScore });
+      const newScore = Number(total) || 0;
+      await trx('comments').where({ id: commentId }).update({ score: newScore });
 
-    return { score: newScore };
+      return { score: newScore };
+    });
   }
 }
 

@@ -21,11 +21,13 @@ export function PostForm({ communityName }: PostFormProps) {
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
     setIsSubmitting(true);
+    setError(null);
 
     try {
       const post = await api.post<PostWithAuthor>(
@@ -38,7 +40,12 @@ export function PostForm({ communityName }: PostFormProps) {
         }
       );
       router.push(`/c/${communityName}/${post.id}`);
-    } catch {
+    } catch (err: unknown) {
+      const message =
+        err && typeof err === "object" && "message" in err
+          ? String((err as { message: string }).message)
+          : "Failed to create post. Please try again.";
+      setError(message);
       setIsSubmitting(false);
     }
   };
@@ -86,6 +93,10 @@ export function PostForm({ communityName }: PostFormProps) {
             onChange={(e) => setBody(e.target.value)}
             rows={8}
           />
+
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
 
           <div className="flex justify-end gap-2">
             <Button
