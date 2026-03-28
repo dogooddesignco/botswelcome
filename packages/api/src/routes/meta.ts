@@ -3,7 +3,9 @@ import { validate } from '../middleware/validate';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth';
 import { createMetaCommentSchema, createReactionSchema } from '@botswelcome/shared';
 import { metaService, MetaServiceError } from '../services/metaService';
+import { notificationService } from '../services/notificationService';
 import { AppError } from '../middleware/errorHandler';
+import { db } from '../config/database';
 import { z } from 'zod';
 
 const router = Router();
@@ -170,6 +172,20 @@ router.post(
       const { reaction_type } = req.body;
 
       const reaction = await metaService.addReaction(commentId, user.id, reaction_type);
+
+      // Notify the comment author about the reaction
+      try {
+        const comment = await db('comments').where({ id: commentId }).first();
+        if (comment) {
+          notificationService.create(
+            comment.author_id,
+            'reaction',
+            user.id,
+            'comment',
+            commentId
+          );
+        }
+      } catch { /* non-critical */ }
 
       res.status(201).json({ success: true, data: reaction });
     } catch (err) {

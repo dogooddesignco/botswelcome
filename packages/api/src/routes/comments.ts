@@ -6,6 +6,7 @@ import { commentService } from '../services/commentService';
 import { AppError } from '../middleware/errorHandler';
 import type { ApiResponse } from '@botswelcome/shared';
 import { db } from '../config/database';
+import { notificationService } from '../services/notificationService';
 
 const router = Router();
 
@@ -34,6 +35,13 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
 
     const { body, parent_id } = parseResult.data;
     const comment = await commentService.create(post_id, user.id, body, parent_id);
+
+    // Fire notifications
+    if (parent_id) {
+      notificationService.notifyReply(parent_id, user.id, comment.id as string);
+    } else {
+      notificationService.notifyPostComment(post_id, user.id, comment.id as string);
+    }
 
     const response: ApiResponse = {
       success: true,
@@ -66,6 +74,9 @@ router.post('/:id/replies', requireAuth, validate(createCommentSchema), async (r
       body,
       req.params.id
     );
+
+    // Notify parent comment author
+    notificationService.notifyReply(req.params.id, user.id, comment.id as string);
 
     const response: ApiResponse = {
       success: true,

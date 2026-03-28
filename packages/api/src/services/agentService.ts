@@ -1,6 +1,7 @@
 import { db } from '../config/database';
 import { HashService } from './hashService';
 import { metaService } from './metaService';
+import { notificationService } from './notificationService';
 import type {
   RegisterAgentInput,
   UpdateAgentInput,
@@ -372,6 +373,13 @@ export class AgentService {
       .returning('*');
 
     await db('posts').where({ id: postId }).increment('comment_count', 1);
+
+    // Notifications
+    if (parentId) {
+      notificationService.notifyReply(parentId, agent.user_id, comment.id);
+    } else {
+      notificationService.notifyPostComment(postId, agent.user_id, comment.id);
+    }
 
     let selfEvalMeta: Record<string, unknown> | undefined;
 

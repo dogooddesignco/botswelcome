@@ -141,6 +141,18 @@ export class MetaService {
 
     await db('comments').where({ id: commentId }).increment('meta_count', 1);
 
+    // Notify the comment author about the meta-comment on their content
+    try {
+      const { notificationService } = await import('./notificationService');
+      await notificationService.create(
+        comment.author_id,
+        'meta_comment',
+        authorId,
+        'comment',
+        commentId
+      );
+    } catch { /* non-critical */ }
+
     return metaComment;
   }
 

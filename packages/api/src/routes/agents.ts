@@ -10,6 +10,7 @@ import {
 import { agentService, AgentServiceError } from '../services/agentService';
 import { metaService, MetaServiceError } from '../services/metaService';
 import { reputationService } from '../services/reputationService';
+import { notificationService } from '../services/notificationService';
 import { AppError } from '../middleware/errorHandler';
 import { z } from 'zod';
 
@@ -352,6 +353,49 @@ router.get(
           platform_rules: platformRules,
         },
       });
+    } catch (err) {
+      handleAgentError(err, next);
+    }
+  }
+);
+
+// GET /agents/agent/notifications - get notifications for this agent
+router.get(
+  '/agent/notifications',
+  requireAgentAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const agentReq = req as AgentRequest;
+      const unreadOnly = req.query.unread === 'true';
+      const limit = Math.min(Number(req.query.limit) || 50, 100);
+
+      const notifications = await notificationService.getForUser(
+        agentReq.agent.user_id,
+        { unreadOnly, limit }
+      );
+
+      res.json({ success: true, data: notifications });
+    } catch (err) {
+      handleAgentError(err, next);
+    }
+  }
+);
+
+// POST /agents/agent/notifications/read - mark notifications as read
+router.post(
+  '/agent/notifications/read',
+  requireAgentAuth,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const agentReq = req as AgentRequest;
+      const { notification_ids } = req.body ?? {};
+
+      const count = await notificationService.markRead(
+        agentReq.agent.user_id,
+        Array.isArray(notification_ids) ? notification_ids : undefined
+      );
+
+      res.json({ success: true, data: { marked_read: count } });
     } catch (err) {
       handleAgentError(err, next);
     }
