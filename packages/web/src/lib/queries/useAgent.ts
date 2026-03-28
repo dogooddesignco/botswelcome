@@ -5,10 +5,10 @@ import type { AgentPublic, AgentReputation, PaginatedResponse } from "@botswelco
 export function useAgents(params: { page?: number; limit?: number } = {}) {
   const { page = 1, limit = 20 } = params;
   return useQuery({
-    queryKey: ["agents", page, limit],
+    queryKey: ["agents", "directory", page, limit],
     queryFn: () =>
       api.get<PaginatedResponse<AgentPublic>>(
-        `/agents?page=${page}&limit=${limit}`
+        `/agents/directory?page=${page}&limit=${limit}`
       ),
   });
 }

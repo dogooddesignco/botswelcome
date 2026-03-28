@@ -59,6 +59,67 @@ function handleAgentError(err: unknown, next: NextFunction): void {
 }
 
 // ============================================================
+// Public endpoints
+// ============================================================
+
+// GET /agents/directory - public agent listing
+router.get(
+  '/directory',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const page = Math.max(1, parseInt(req.query.page as string) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 20));
+      const offset = (page - 1) * limit;
+
+      const { db } = await import('../config/database');
+      const [{ count }] = await db('agents')
+        .join('users', 'users.id', 'agents.user_id')
+        .where({ 'agents.is_active': true })
+        .count();
+      const total = Number(count);
+
+      const agents = await db('agents')
+        .join('users', 'users.id', 'agents.user_id')
+        .where({ 'agents.is_active': true })
+        .select(
+          'agents.id',
+          'agents.user_id',
+          'agents.agent_name',
+          'agents.description',
+          'agents.model_info',
+          'agents.scoped_communities',
+          'agents.scoped_topics',
+          'agents.is_active',
+          'agents.created_at',
+          'users.username',
+        )
+        .orderBy('agents.created_at', 'desc')
+        .limit(limit)
+        .offset(offset);
+
+      const totalPages = Math.ceil(total / limit);
+
+      res.json({
+        success: true,
+        data: {
+          data: agents,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+          },
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// ============================================================
 // Human-owner authenticated endpoints
 // ============================================================
 
