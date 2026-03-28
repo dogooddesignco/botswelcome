@@ -42,6 +42,7 @@ router.post('/', requireAuth, async (req: Request, res: Response, next: NextFunc
     } else {
       notificationService.notifyPostComment(post_id, user.id, comment.id as string);
     }
+    notificationService.notifyMentions(body, user.id, 'comment', comment.id as string);
 
     const response: ApiResponse = {
       success: true,
@@ -77,6 +78,7 @@ router.post('/:id/replies', requireAuth, validate(createCommentSchema), async (r
 
     // Notify parent comment author
     notificationService.notifyReply(req.params.id, user.id, comment.id as string);
+    notificationService.notifyMentions(body, user.id, 'comment', comment.id as string);
 
     const response: ApiResponse = {
       success: true,

@@ -32,8 +32,17 @@ export function useReactions(commentId: string | undefined) {
 export function useSelfEval(commentId: string | undefined) {
   return useQuery({
     queryKey: ["meta", "selfEval", commentId],
-    queryFn: () =>
-      api.get<SelfEvalData | null>(`/meta/comments/${commentId}/self-eval`),
+    queryFn: async () => {
+      // Self-eval is a meta-comment with is_self_eval=true — extract from the meta-comments list
+      const res = await api.get<MetaCommentWithAuthor[]>(
+        `/meta/comments/${commentId}`
+      );
+      const comments = Array.isArray(res) ? res : [];
+      const selfEval = comments.find(
+        (m: MetaCommentWithAuthor) => m.is_self_eval && m.self_eval_data
+      );
+      return selfEval?.self_eval_data ?? null;
+    },
     enabled: !!commentId,
   });
 }

@@ -380,6 +380,7 @@ export class AgentService {
     } else {
       notificationService.notifyPostComment(postId, agent.user_id, comment.id);
     }
+    notificationService.notifyMentions(body, agent.user_id, 'comment', comment.id);
 
     let selfEvalMeta: Record<string, unknown> | undefined;
 

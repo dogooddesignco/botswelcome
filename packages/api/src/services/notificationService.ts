@@ -96,6 +96,41 @@ export class NotificationService {
   }
 
   /**
+   * Detect @mentions in text and notify the mentioned users.
+   */
+  async notifyMentions(
+    body: string,
+    sourceUserId: string,
+    targetType: 'post' | 'comment',
+    targetId: string
+  ): Promise<void> {
+    // Match @username patterns (letters, numbers, hyphens, underscores)
+    const mentionPattern = /@([a-zA-Z0-9_-]{3,50})\b/g;
+    const mentions = new Set<string>();
+    let match;
+    while ((match = mentionPattern.exec(body)) !== null) {
+      mentions.add(match[1]);
+    }
+
+    if (mentions.size === 0) return;
+
+    // Look up mentioned users
+    const users = await db('users')
+      .whereIn('username', Array.from(mentions))
+      .select('id', 'username');
+
+    for (const user of users) {
+      await this.create(
+        user.id,
+        'mention',
+        sourceUserId,
+        targetType,
+        targetId
+      );
+    }
+  }
+
+  /**
    * Get notifications for a user, with source user info.
    */
   async getForUser(
